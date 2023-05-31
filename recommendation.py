@@ -342,7 +342,7 @@ if __name__ == "__main__":
     ### Deterministic greedy versus random ###
     # Comparison between objective values and the maximum of each criteria
     for alg in compare_with:
-        f, axs = plt.subplots(3, 4)
+        f, axs = plt.subplots(3, 4, figsize=(13, 7))
         for i in range(len(X)):
             sns.histplot(
                 data=results.loc[results["algorithm"] == "deterministic_greedy", X]
@@ -366,12 +366,13 @@ if __name__ == "__main__":
             ax=axs[2, 3],
         )
 
-        plt.show()
+        plt.subplots_adjust(left=0.043, bottom=0.074, right=0.979, top=0.976, wspace=0.188, hspace=0.264)
+        f.savefig(fname='greedy_vs_' + alg + '.png')
 
     ### Random greedy versus random ###
     # Comparison between objective values and the maximum of each criteria
     for alg in compare_with:
-        f, axs = plt.subplots(3, 4)
+        f, axs = plt.subplots(3, 4, figsize=(13, 7))
         for i in range(len(X)):
             sns.histplot(
                 data=results.loc[results["algorithm"] == "random_greedy", X]
@@ -395,4 +396,5 @@ if __name__ == "__main__":
             ax=axs[2, 3],
         )
 
-        plt.show()
+        plt.subplots_adjust(left=0.043, bottom=0.074, right=0.979, top=0.976, wspace=0.188, hspace=0.264)
+        f.savefig(fname='randomGreedy_vs_' + alg + '.png')
