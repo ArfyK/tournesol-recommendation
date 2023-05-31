@@ -366,8 +366,10 @@ if __name__ == "__main__":
             ax=axs[2, 3],
         )
 
-        plt.subplots_adjust(left=0.043, bottom=0.074, right=0.979, top=0.976, wspace=0.188, hspace=0.264)
-        f.savefig(fname='greedy_vs_' + alg + '.png')
+        plt.subplots_adjust(
+            left=0.043, bottom=0.074, right=0.979, top=0.976, wspace=0.188, hspace=0.264
+        )
+        f.savefig(fname="greedy_vs_" + alg + ".png")
 
     ### Random greedy versus random ###
     # Comparison between objective values and the maximum of each criteria
@@ -396,5 +398,7 @@ if __name__ == "__main__":
             ax=axs[2, 3],
         )
 
-        plt.subplots_adjust(left=0.043, bottom=0.074, right=0.979, top=0.976, wspace=0.188, hspace=0.264)
-        f.savefig(fname='randomGreedy_vs_' + alg + '.png')
+        plt.subplots_adjust(
+            left=0.043, bottom=0.074, right=0.979, top=0.976, wspace=0.188, hspace=0.264
+        )
+        f.savefig(fname="randomGreedy_vs_" + alg + ".png")
