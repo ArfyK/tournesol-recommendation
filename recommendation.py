@@ -252,9 +252,9 @@ if __name__ == "__main__":
 
     #### TESTS ####
     if len(sys.argv) < 3:  # no results file provided
-        n_tests = 100
+        n_tests = 5
 
-        size = 1000
+        size = 100
 
         alpha = 0.5  # exponent of the power function used in the objective function
 
@@ -268,27 +268,28 @@ if __name__ == "__main__":
             df = dataFrame.loc[
                 np.random.choice(a=dataFrame.index, size=size, replace=False)
             ]
+            maxs = df[CRITERIA].max()
 
             dg = deterministic_greedy(df, n_vid=n_vid, alpha=alpha)
-            maxs = df.loc[df["uid"].isin(dg["uids"]), CRITERIA].max().to_list()
+            maxs_dg = df.loc[df["uid"].isin(dg["uids"]), CRITERIA].max().divide(maxs).to_list()
             results.append(
-                [k + 1, "deterministic_greedy", alpha, dg["uids"], dg["obj"]] + maxs
+                [k + 1, "deterministic_greedy", alpha, dg["uids"], dg["obj"]] + maxs_dg
             )
 
             rg = random_greedy(df, n_vid=n_vid, alpha=alpha)
-            maxs = df.loc[df["uid"].isin(rg["uids"]), CRITERIA].max().to_list()
+            maxs_rg = df.loc[df["uid"].isin(rg["uids"]), CRITERIA].max().divide(maxs).to_list()
             results.append(
-                [k + 1, "random_greedy", alpha, rg["uids"], rg["obj"]] + maxs
+                [k + 1, "random_greedy", alpha, rg["uids"], rg["obj"]] + maxs_rg
             )
 
             r = random(df, n_vid=n_vid, alpha=alpha)
-            maxs = df.loc[df["uid"].isin(r["uids"]), CRITERIA].max().to_list()
-            results.append([k + 1, "random", alpha, r["uids"], r["obj"]] + maxs)
+            maxs_r = df.loc[df["uid"].isin(r["uids"]), CRITERIA].max().divide(maxs).to_list()
+            results.append([k + 1, "random", alpha, r["uids"], r["obj"]] + maxs_r)
 
             r_thresh_0 = random(
                 df, n_vid=n_vid, alpha=alpha, pre_selection=True, threshold=0
             )
-            maxs = df.loc[df["uid"].isin(r_thresh_0["uids"]), CRITERIA].max().to_list()
+            maxs_thresh_0 = df.loc[df["uid"].isin(r_thresh_0["uids"]), CRITERIA].max().divide(maxs).to_list()
             results.append(
                 [
                     k + 1,
@@ -297,13 +298,13 @@ if __name__ == "__main__":
                     r_thresh_0["uids"],
                     r_thresh_0["obj"],
                 ]
-                + maxs
+                + maxs_thresh_0
             )
 
             r_thresh_20 = random(
                 df, n_vid=n_vid, alpha=alpha, pre_selection=True, threshold=20
             )
-            maxs = df.loc[df["uid"].isin(r_thresh_20["uids"]), CRITERIA].max().to_list()
+            maxs_thresh_20 = df.loc[df["uid"].isin(r_thresh_20["uids"]), CRITERIA].max().divide(maxs).to_list()
             results.append(
                 [
                     k + 1,
@@ -312,7 +313,7 @@ if __name__ == "__main__":
                     r_thresh_20["uids"],
                     r_thresh_20["obj"],
                 ]
-                + maxs
+                + maxs_thresh_20
             )
 
         # Set up a dataframe to hold the results
@@ -337,68 +338,53 @@ if __name__ == "__main__":
 
     X = ["objective_value"] + CRITERIA
 
-    compare_with = ["random", "random_threshold_0", "random_threshold_20"]
-
-    ### Deterministic greedy versus random ###
     # Comparison between objective values and the maximum of each criteria
-    for alg in compare_with:
-        f, axs = plt.subplots(3, 4, figsize=(13, 7))
-        for i in range(len(X)):
-            sns.histplot(
-                data=results.loc[results["algorithm"] == "deterministic_greedy", X]
-                - results.loc[results["algorithm"] == alg, X],
-                x=X[i],
-                element="step",
-                ax=axs[i % 3, i % 4],
-                legend=(i == 0),
-            )
+    f, axs = plt.subplots(3, 4, figsize=(13, 7), sharey=True)
 
-        # Number of different channel featured in the selection:
-        n_vid_per_recommendation = len(results.loc[1, "uids"])
-        results["n_channel"] = results["uids"].apply(
-            lambda x: unique_channel(dataFrame, x)
+    for i in range(len(X)):
+        sns.boxplot(
+            data=results,
+            x=X[i],
+            y='algorithm',
+            ax=axs[i % 3, i % 4],
+            orient='h'
         )
-        sns.histplot(
-            data=results[results["algorithm"].isin(["deterministic_greedy", alg])],
-            x="n_channel",
-            hue="algorithm",
-            element="step",
-            ax=axs[2, 3],
+        sns.stripplot(
+            data=results,
+            x=X[i],
+            y='algorithm',
+            ax=axs[i % 3, i % 4],
         )
 
-        plt.subplots_adjust(
-            left=0.043, bottom=0.074, right=0.979, top=0.976, wspace=0.188, hspace=0.264
-        )
-        f.savefig(fname="greedy_vs_" + alg + ".png")
+        axs[i%3, i%4].xaxis.grid(True)
+        axs[i%3, i%4].set_ylabel('')
 
-    ### Random greedy versus random ###
-    # Comparison between objective values and the maximum of each criteria
-    for alg in compare_with:
-        f, axs = plt.subplots(3, 4, figsize=(13, 7))
-        for i in range(len(X)):
-            sns.histplot(
-                data=results.loc[results["algorithm"] == "random_greedy", X]
-                - results.loc[results["algorithm"] == alg, X],
-                x=X[i],
-                element="step",
-                ax=axs[i % 3, i % 4],
-                legend=(i == 0),
-            )
+    # Number of different channel featured in the selection:
+    n_vid_per_recommendation = len(results.loc[1, "uids"])
+    results["n_channel"] = results["uids"].apply(
+        lambda x: unique_channel(dataFrame, x)
+    )
 
-        # Number of different channel featured in the selection:
-        n_vid_per_recommendation = len(results.loc[1, "uids"])
-        results["n_channel"] = results["uids"].apply(
-            lambda x: unique_channel(dataFrame, x)
-        )
-        sns.histplot(
-            data=results[results["algorithm"].isin(["random_greedy", alg])],
-            x="n_channel",
-            hue="algorithm",
-            element="step",
-            ax=axs[2, 3],
-        )
+    sns.boxplot(
+        data=results,
+        x="n_channel",
+        y="algorithm",
+        orient='h',
+        ax=axs[2, 3],
+    )
+    sns.stripplot(
+        data=results,
+        x="n_channel",
+        y="algorithm",
+        ax=axs[2, 3],
+    )
+    
+    axs[2, 3].xaxis.grid(True)
+    axs[2, 3].set_ylabel('')
 
-        plt.subplots_adjust(
-            left=0.043, bottom=0.074, right=0.979, top=0.976, wspace=0.188, hspace=0.264
-        )
-        f.savefig(fname="randomGreedy_vs_" + alg + ".png")
+    plt.subplots_adjust(
+        left=0.12, bottom=0.074, right=0.998, top=0.976, wspace=0.062, hspace=0.264
+    )
+
+    f.savefig(fname="boxplots.png")
+
