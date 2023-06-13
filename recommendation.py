@@ -271,25 +271,42 @@ if __name__ == "__main__":
             maxs = df[CRITERIA].max()
 
             dg = deterministic_greedy(df, n_vid=n_vid, alpha=alpha)
-            maxs_dg = df.loc[df["uid"].isin(dg["uids"]), CRITERIA].max().divide(maxs).to_list()
+            maxs_dg = (
+                df.loc[df["uid"].isin(dg["uids"]), CRITERIA]
+                .max()
+                .divide(maxs)
+                .to_list()
+            )
             results.append(
                 [k + 1, "deterministic_greedy", alpha, dg["uids"], dg["obj"]] + maxs_dg
             )
 
             rg = random_greedy(df, n_vid=n_vid, alpha=alpha)
-            maxs_rg = df.loc[df["uid"].isin(rg["uids"]), CRITERIA].max().divide(maxs).to_list()
+            maxs_rg = (
+                df.loc[df["uid"].isin(rg["uids"]), CRITERIA]
+                .max()
+                .divide(maxs)
+                .to_list()
+            )
             results.append(
                 [k + 1, "random_greedy", alpha, rg["uids"], rg["obj"]] + maxs_rg
             )
 
             r = random(df, n_vid=n_vid, alpha=alpha)
-            maxs_r = df.loc[df["uid"].isin(r["uids"]), CRITERIA].max().divide(maxs).to_list()
+            maxs_r = (
+                df.loc[df["uid"].isin(r["uids"]), CRITERIA].max().divide(maxs).to_list()
+            )
             results.append([k + 1, "random", alpha, r["uids"], r["obj"]] + maxs_r)
 
             r_thresh_0 = random(
                 df, n_vid=n_vid, alpha=alpha, pre_selection=True, threshold=0
             )
-            maxs_thresh_0 = df.loc[df["uid"].isin(r_thresh_0["uids"]), CRITERIA].max().divide(maxs).to_list()
+            maxs_thresh_0 = (
+                df.loc[df["uid"].isin(r_thresh_0["uids"]), CRITERIA]
+                .max()
+                .divide(maxs)
+                .to_list()
+            )
             results.append(
                 [
                     k + 1,
@@ -304,7 +321,12 @@ if __name__ == "__main__":
             r_thresh_20 = random(
                 df, n_vid=n_vid, alpha=alpha, pre_selection=True, threshold=20
             )
-            maxs_thresh_20 = df.loc[df["uid"].isin(r_thresh_20["uids"]), CRITERIA].max().divide(maxs).to_list()
+            maxs_thresh_20 = (
+                df.loc[df["uid"].isin(r_thresh_20["uids"]), CRITERIA]
+                .max()
+                .divide(maxs)
+                .to_list()
+            )
             results.append(
                 [
                     k + 1,
@@ -343,33 +365,27 @@ if __name__ == "__main__":
 
     for i in range(len(X)):
         sns.boxplot(
-            data=results,
-            x=X[i],
-            y='algorithm',
-            ax=axs[i % 3, i % 4],
-            orient='h'
+            data=results, x=X[i], y="algorithm", ax=axs[i % 3, i % 4], orient="h"
         )
         sns.stripplot(
             data=results,
             x=X[i],
-            y='algorithm',
+            y="algorithm",
             ax=axs[i % 3, i % 4],
         )
 
-        axs[i%3, i%4].xaxis.grid(True)
-        axs[i%3, i%4].set_ylabel('')
+        axs[i % 3, i % 4].xaxis.grid(True)
+        axs[i % 3, i % 4].set_ylabel("")
 
     # Number of different channel featured in the selection:
     n_vid_per_recommendation = len(results.loc[1, "uids"])
-    results["n_channel"] = results["uids"].apply(
-        lambda x: unique_channel(dataFrame, x)
-    )
+    results["n_channel"] = results["uids"].apply(lambda x: unique_channel(dataFrame, x))
 
     sns.boxplot(
         data=results,
         x="n_channel",
         y="algorithm",
-        orient='h',
+        orient="h",
         ax=axs[2, 3],
     )
     sns.stripplot(
@@ -378,13 +394,12 @@ if __name__ == "__main__":
         y="algorithm",
         ax=axs[2, 3],
     )
-    
+
     axs[2, 3].xaxis.grid(True)
-    axs[2, 3].set_ylabel('')
+    axs[2, 3].set_ylabel("")
 
     plt.subplots_adjust(
         left=0.12, bottom=0.074, right=0.998, top=0.976, wspace=0.062, hspace=0.264
     )
 
     f.savefig(fname="boxplots.png")
-
