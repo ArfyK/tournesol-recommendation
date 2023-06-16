@@ -107,7 +107,7 @@ def deterministic_greedy(data, n_vid=10, q=0.15, l=1 / 10, alpha=0.5):
     return {"uids": S1 + S2, "obj": objective1 + objective2}
 
 
-def random_greedy(data, n_vid=10, q=0.15, l=1 / 10, alpha=0.5):
+def random_greedy(data, n_vid=10, q=0.15, l=1 / 10, alpha=0.5, T=1):
     df = data.copy()  # copy the dataframe to avoid modifying the original
 
     # Normalizes the dataframe
@@ -135,7 +135,7 @@ def random_greedy(data, n_vid=10, q=0.15, l=1 / 10, alpha=0.5):
             lambda x: F(partial_sums, x), axis="columns"
         )
         # Compute the probability distribution
-        p = obj.apply(lambda x: x**5)
+        p = obj.divide(obj.mean()).apply(lambda x: np.exp(-T*x))  #objective value are normalized
         norm = p.sum()
         p = p.apply(lambda x: x / norm)
 
@@ -168,8 +168,7 @@ def random_greedy(data, n_vid=10, q=0.15, l=1 / 10, alpha=0.5):
         )
 
         # Compute the probability distribution
-        p = obj.apply(lambda x: np.exp(x / 100))  # 100 is a normalization
-        # ensuring numbers don't get too high
+        p = obj.divide(obj.mean()).apply(lambda x: np.exp(-T*x))  #objective value are normalized
         norm = p.sum()
         p = p.apply(lambda x: x / norm)
 
@@ -402,4 +401,4 @@ if __name__ == "__main__":
         left=0.12, bottom=0.074, right=0.998, top=0.976, wspace=0.062, hspace=0.264
     )
 
-    f.savefig(fname="boxplots.png")
+    f.savefig(fname="algorithms_comparison.png")
