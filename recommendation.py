@@ -135,7 +135,9 @@ def random_greedy(data, n_vid=10, q=0.15, l=1 / 10, alpha=0.5, T=1):
             lambda x: F(partial_sums, x), axis="columns"
         )
         # Compute the probability distribution
-        p = obj.divide(obj.mean()).apply(lambda x: np.exp(-T*x))  #objective value are normalized
+        p = obj.divide(obj.mean()).apply(
+            lambda x: np.exp(-T * x)
+        )  # objective value are normalized
         norm = p.sum()
         p = p.apply(lambda x: x / norm)
 
@@ -168,7 +170,9 @@ def random_greedy(data, n_vid=10, q=0.15, l=1 / 10, alpha=0.5, T=1):
         )
 
         # Compute the probability distribution
-        p = obj.divide(obj.mean()).apply(lambda x: np.exp(-T*x))  #objective value are normalized
+        p = obj.divide(obj.mean()).apply(
+            lambda x: np.exp(-T * x)
+        )  # objective value are normalized
         norm = p.sum()
         p = p.apply(lambda x: x / norm)
 

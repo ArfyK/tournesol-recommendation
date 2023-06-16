@@ -129,7 +129,7 @@ algo_list = list(results["algorithm"].unique())
 coverage = pd.DataFrame(columns=["uid", "rank"] + algo_list)
 coverage["uid"] = list(
     df.sort_values(by="largely_recommended", ascending=False)["uid"].iloc[0:200]
-)#we could also rank the videos according to our objective function instead of looking only at the tournesol score 
+)  # we could also rank the videos according to our objective function instead of looking only at the tournesol score
 
 coverage["rank"] = list(range(1, K + 1))
 coverage[algo_list] = np.zeros((K, len(algo_list)))
@@ -160,4 +160,4 @@ plt.subplots_adjust(
     left=0.055, bottom=0.076, right=0.994, top=0.946, wspace=0.072, hspace=0.22
 )
 
-plt.savefig(fname='temperature_coverage_comparison.png')
+plt.savefig(fname="temperature_coverage_comparison.png")
