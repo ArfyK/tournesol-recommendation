@@ -88,11 +88,13 @@ for i in range(len(X)):
     axs[i % 3, i % 4].xaxis.grid(True)
     axs[i % 3, i % 4].set_ylabel("")
 
+
 # Number of different channel featured in the selection:
 def unique_channel(
     df, uids
 ):  # used to count how many channel are featured in each selection
     return df.loc[df["uid"].isin(uids), "uploader"].unique().shape[0]
+
 
 n_vid_per_recommendation = len(results.loc[1, "uids"])
 results["n_channel"] = results["uids"].apply(lambda x: unique_channel(df, x))
@@ -144,6 +146,7 @@ def compute_coverage(coverage_df, result_series):
         + 1
     )
 
+
 results.apply(lambda x: compute_coverage(coverage, x), axis=1)
 coverage[algo_list] = coverage[algo_list] * len(algo_list) / results.size
 
@@ -154,25 +157,29 @@ for i in range(len(algo_list)):
     axs[i % 3, i % 2].set_title(algo_list[i])
     axs[i % 3, i % 2].yaxis.set_label_text("count")
 
-f.suptitle('Coverage of the top '+str(K)+' tournesol scores')
+f.suptitle("Coverage of the top " + str(K) + " tournesol scores")
 plt.subplots_adjust(
     left=0.055, bottom=0.076, right=0.994, top=0.907, wspace=0.072, hspace=0.238
 )
 
 plt.savefig(fname="temperature_coverage_tournesolscores.png")
 
-#Coverage of top K ranking the videos with a function resembling the objective function
+# Coverage of top K ranking the videos with a function resembling the objective function
 
-def aggregated_score(video_scores_series, l = 1/10, alpha=1/2):
+
+def aggregated_score(video_scores_series, l=1 / 10, alpha=1 / 2):
     tournesol_score = video_scores_series[CRITERIA[0]]
-    criteria_aggregation = l*video_scores_series[CRITERIA[1:]].apply(lambda x: x**alpha).sum()
+    criteria_aggregation = (
+        l * video_scores_series[CRITERIA[1:]].apply(lambda x: x**alpha).sum()
+    )
     return tournesol_score + criteria_aggregation
 
-df['aggregated_score'] = df.apply(aggregated_score, axis='columns')
+
+df["aggregated_score"] = df.apply(aggregated_score, axis="columns")
 
 coverage = pd.DataFrame(columns=["uid", "rank"] + algo_list)
 coverage["uid"] = list(
-    df.sort_values(by='aggregated_score', ascending=False)["uid"].iloc[0:K]
+    df.sort_values(by="aggregated_score", ascending=False)["uid"].iloc[0:K]
 )
 
 coverage["rank"] = list(range(1, K + 1))
@@ -188,7 +195,7 @@ for i in range(len(algo_list)):
     axs[i % 3, i % 2].set_title(algo_list[i])
     axs[i % 3, i % 2].yaxis.set_label_text("count")
 
-f.suptitle('Coverage of the top '+str(K)+' aggregated scores')
+f.suptitle("Coverage of the top " + str(K) + " aggregated scores")
 plt.subplots_adjust(
     left=0.055, bottom=0.076, right=0.994, top=0.907, wspace=0.072, hspace=0.238
 )
