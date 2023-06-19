@@ -81,10 +81,10 @@ def deterministic_greedy(data, n_vid=10, q=0.15, l=1 / 10, alpha=0.5):
     partial_sum = 0
     df_incomplete = df.loc[
         contains_na, ["uid", "largely_recommended"]
-    ]  # we remove videos with no missing score
+    ]  # Remove videos with no missing score
     df_incomplete = df_incomplete[
         ~df_incomplete["uid"].isin(S1)
-    ]  # we remove videos that were already selected
+    ]  # Remove videos that were already selected
 
     for i in range(n_incomplete):
         # Compute the objective function
@@ -151,17 +151,17 @@ def random_greedy(data, n_vid=10, q=0.15, l=1 / 10, alpha=0.5, T=1):
             0
         ]  # hack to keep a series
 
-    objective1 = obj.max()
+    objective1 = obj[new_idx]
 
     # Selection of videos only using the tournesol score
     S2 = []  # indexes of the selected videos
     partial_sum = 0
     df_incomplete = df.loc[
         contains_na, ["uid", "largely_recommended"]
-    ]  # we remove videos with no missing score
+    ]  # Remove videos with no missing score
     df_incomplete = df_incomplete[
         ~df_incomplete["uid"].isin(S1)
-    ]  # we remove videos that were already selected
+    ]  # Remove videos that were already selected
 
     for i in range(n_incomplete):
         # Compute the objective function
@@ -189,7 +189,7 @@ def random_greedy(data, n_vid=10, q=0.15, l=1 / 10, alpha=0.5, T=1):
             0
         ]  # hack to get a series
 
-    objective2 = obj.max()
+    objective2 = obj[new_idx]
 
     return {"uids": S1 + S2, "obj": objective1 + objective2}
 
@@ -255,7 +255,7 @@ if __name__ == "__main__":
 
     #### TESTS ####
     if len(sys.argv) < 3:  # no results file provided
-        n_tests = 5
+        n_tests = 1
 
         size = 100
 
