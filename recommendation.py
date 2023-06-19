@@ -21,9 +21,7 @@ CRITERIA = [
 
 
 # Complete Objective function
-def F(partial_sums, new):
-    l = 1 / 10
-    alpha = 0.5
+def F(partial_sums, new, l = 1/10, alpha = 0.5):
     # Relevance term
     R = partial_sums["largely_recommended"] + new["largely_recommended"]
     # Diversity term
@@ -64,7 +62,7 @@ def deterministic_greedy(data, n_vid=10, q=0.15, l=1 / 10, alpha=0.5):
     for i in range(n_complete):
         # Compute the objective function
         obj = df.loc[~df["uid"].isin(S1)].apply(
-            lambda x: F(partial_sums, x), axis="columns"
+            lambda x: F(partial_sums, x, l, alpha), axis="columns"
         )
 
         # Update S1 and partial sums
@@ -132,11 +130,11 @@ def random_greedy(data, n_vid=10, q=0.15, l=1 / 10, alpha=0.5, T=1):
     for i in range(n_complete):
         # Compute the objective function
         obj = df.loc[~df["uid"].isin(S1)].apply(
-            lambda x: F(partial_sums, x), axis="columns"
+            lambda x: F(partial_sums, x, l, alpha), axis="columns"
         )
         # Compute the probability distribution
         p = obj.divide(obj.mean()).apply(
-            lambda x: np.exp(-T * x)
+            lambda x: np.exp(T * x)
         )  # objective value are normalized
         norm = p.sum()
         p = p.apply(lambda x: x / norm)
@@ -171,7 +169,7 @@ def random_greedy(data, n_vid=10, q=0.15, l=1 / 10, alpha=0.5, T=1):
 
         # Compute the probability distribution
         p = obj.divide(obj.mean()).apply(
-            lambda x: np.exp(-T * x)
+            lambda x: np.exp(T * x)
         )  # objective value are normalized
         norm = p.sum()
         p = p.apply(lambda x: x / norm)
@@ -271,7 +269,7 @@ if __name__ == "__main__":
             df = dataFrame.loc[
                 np.random.choice(a=dataFrame.index, size=size, replace=False)
             ]
-            maxs = df[CRITERIA].max()
+            maxs = (df[CRITERIA] - df[CRITERIA].min()).max()
 
             dg = deterministic_greedy(df, n_vid=n_vid, alpha=alpha)
             maxs_dg = (
