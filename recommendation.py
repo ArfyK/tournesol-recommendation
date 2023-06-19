@@ -19,9 +19,11 @@ CRITERIA = [
     "backfire_risk",
 ]
 
+### Greedy objective functions
+
 
 # Complete Objective function
-def F(partial_sums, new, l = 1/10, alpha = 0.5):
+def F(partial_sums, new, l=1 / 10, alpha=0.5):
     # Relevance term
     R = partial_sums["largely_recommended"] + new["largely_recommended"]
     # Diversity term
@@ -192,11 +194,33 @@ def random_greedy(data, n_vid=10, q=0.15, l=1 / 10, alpha=0.5, T=1):
     return {"uids": S1 + S2, "obj": objective1 + objective2}
 
 
-def random(data, n_vid=10, pre_selection=False, threshold=0, alpha=0.5, l=1 / 10):
+### Random sampling
+
+
+# Functions used to do pre-select a subset of the dataset prior to sampling in random
+def rank_by_tournesol_score(series, l, alpha):
+    return series["largely_recommended"]
+
+
+def aggregated_score(series, l, alpha):
+    # Resembles the F objective function
+    return series["largely_recommended"] + l * series[CRITERIA[1:]].sum()
+
+
+def random(
+    data,
+    n_vid=10,
+    alpha=0.5,
+    l=1 / 10,
+    pre_selection=False,
+    quantile=0,
+    key=rank_by_tournesol_score,
+):
     df = data.copy()  # copy the dataframe to avoid modifying the original
 
     if pre_selection:
-        df = df.loc[df["largely_recommended"] >= threshold]
+        df["key"] = df.apply(lambda x: key(x, l, alpha), axis="columns")
+        df = df.loc[df["key"] >= df["key"].quantile(quantile)]
 
     # Normalizes the dataframe
     df[CRITERIA] = df[CRITERIA] - df[CRITERIA].min()
