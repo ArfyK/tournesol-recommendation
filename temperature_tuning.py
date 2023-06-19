@@ -27,7 +27,9 @@ if len(sys.argv) < 3:  # no results file provided
         maxs = df[CRITERIA].max()
 
         for t in temp_list:
-            rg = random_greedy(df, n_vid=n_vid, alpha=alpha, T=t)
+            m = (df[CRITERIA] - df[CRITERIA].min()).mean().mean()
+
+            rg = random_greedy(df, n_vid=n_vid, alpha=alpha, l = 1/10*m , T=t)
             maxs_rg = (
                 df.loc[df["uid"].isin(rg["uids"]), CRITERIA]
                 .max()
@@ -35,26 +37,44 @@ if len(sys.argv) < 3:  # no results file provided
                 .to_list()
             )
             results.append(
-                [k + 1, "random_greedy_" + str(t), rg["uids"], rg["obj"]] + maxs_rg
+                [k + 1, "rg_l=1/10*m_" + str(t), rg["uids"], rg["obj"]] + maxs_rg
             )
 
-        r_thresh_20 = random(
-            df, n_vid=n_vid, alpha=alpha, pre_selection=True, threshold=20
-        )
-        maxs_thresh_20 = (
-            df.loc[df["uid"].isin(r_thresh_20["uids"]), CRITERIA]
-            .max()
-            .divide(maxs)
-            .to_list()
+        r_50 = random(df, n_vid=n_vid, alpha=alpha, pre_selection=True, quantile=0.5)
+        maxs_50 = (
+            df.loc[df["uid"].isin(r_50["uids"]), CRITERIA].max().divide(maxs).to_list()
         )
         results.append(
             [
                 k + 1,
-                "random_threshold_20",
-                r_thresh_20["uids"],
-                r_thresh_20["obj"],
+                "r_50",
+                alpha,
+                r_50["uids"],
+                r_50["obj"],
             ]
-            + maxs_thresh_20
+            + maxs_50
+        )
+
+        r_50 = random(
+            df,
+            n_vid=n_vid,
+            alpha=alpha,
+            pre_selection=True,
+            quantile=0.5,
+            key=aggregated_score,
+        )
+        maxs_50 = (
+            df.loc[df["uid"].isin(r_50["uids"]), CRITERIA].max().divide(maxs).to_list()
+        )
+        results.append(
+            [
+                k + 1,
+                "r_agg_50",
+                alpha,
+                r_50["uids"],
+                r_50["obj"],
+            ]
+            + maxs_50
         )
 
     # Set up a dataframe to hold the results
