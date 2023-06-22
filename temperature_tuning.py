@@ -85,7 +85,14 @@ if len(sys.argv) < 3:  # no results file provided
     columns = ["test", "algorithm", "alpha", "uids", "objective_value"] + CRITERIA
     results = pd.DataFrame(data=results, columns=columns).set_index("test")
 
-    results.to_csv("temp_tuning_" + "n_test=" + str(n_tests) + ".csv")
+    results.to_csv(
+        "temp_tuning_"
+        + "n_test="
+        + str(n_tests)
+        + "_t="
+        + str(temp_list)[1:-1].replace(", ", "_")
+        + ".csv"
+    )
 
 #### PLOTS ####
 
@@ -94,6 +101,15 @@ if len(sys.argv) == 3:  # results file provided
     results = pd.read_csv(sys.argv[2])
     # hack to get the uids as a python list instead of a string
     results["uids"] = results["uids"].apply(lambda x: x[2:-2].split("', '"))
+
+    algo_list = results["algorithm"].unique()
+    n_tests = results.shape[0] / len(algo_list)
+
+    # hack to retrieve the temperature list from the algorithms name
+    temp_algo_list = list(algo_list)
+    temp_algo_list.remove("r_75")
+    temp_algo_list.remove("r_agg_75")
+    temp_list = [float(algo.split("=").pop()) for algo in temp_algo_list]
 
 X = ["objective_value"] + CRITERIA
 
@@ -144,7 +160,13 @@ plt.subplots_adjust(
     left=0.12, bottom=0.074, right=0.998, top=0.976, wspace=0.062, hspace=0.264
 )
 
-plt.savefig(fname="temperature_criteria_comparison.png")
+plt.savefig(
+    fname="temperature_criteria_comparison_t="
+    + str(temp_list)[1:-1].replace(", ", "_")
+    + "_n_tests="
+    + str(n_tests)
+    + ".png"
+)
 
 # Coverage of the top K of tournesol scores
 K = 200
@@ -172,21 +194,26 @@ def compute_coverage(coverage_df, result_series):
 
 
 results.apply(lambda x: compute_coverage(coverage, x), axis=1)
-coverage[algo_list] = coverage[algo_list] * len(algo_list) / results.size
+coverage[algo_list] = coverage[algo_list] * len(algo_list) / results.shape[0]
 
-f, axs = plt.subplots(3, 2, figsize=(13, 7), sharex=True, sharey=True)
+f, axs = plt.subplots(3, 2, figsize=(13, 7), sharex=True)
 for i in range(len(algo_list)):
     sns.barplot(data=coverage, x="rank", y=algo_list[i], ax=axs[i % 3, i % 2])
-    axs[i % 3, i % 2].axhline(y=results.index.max() / K)
     axs[i % 3, i % 2].set_title(algo_list[i])
-    axs[i % 3, i % 2].yaxis.set_label_text("count")
+    axs[i % 3, i % 2].yaxis.set_label_text("count / nbr of tests")
 
 f.suptitle("Coverage of the top " + str(K) + " tournesol scores")
 plt.subplots_adjust(
     left=0.055, bottom=0.076, right=0.994, top=0.907, wspace=0.072, hspace=0.238
 )
 
-plt.savefig(fname="temperature_coverage_tournesolscores.png")
+plt.savefig(
+    fname="temperature_coverage_tournesolscore_t="
+    + str(temp_list)[1:-1].replace(", ", "_")
+    + "n_tests="
+    + str(n_tests)
+    + ".png"
+)
 
 # Coverage of top K ranking the videos with a function resembling the objective function
 
@@ -210,18 +237,23 @@ coverage["rank"] = list(range(1, K + 1))
 coverage[algo_list] = np.zeros((K, len(algo_list)))
 
 results.apply(lambda x: compute_coverage(coverage, x), axis=1)
-coverage[algo_list] = coverage[algo_list] * len(algo_list) / results.size
+coverage[algo_list] = coverage[algo_list] * len(algo_list) / results.shape[0]
 
-f, axs = plt.subplots(3, 2, figsize=(13, 7), sharex=True, sharey=True)
+f, axs = plt.subplots(3, 2, figsize=(13, 7), sharex=True)
 for i in range(len(algo_list)):
     sns.barplot(data=coverage, x="rank", y=algo_list[i], ax=axs[i % 3, i % 2])
-    axs[i % 3, i % 2].axhline(y=results.index.max() / K)
     axs[i % 3, i % 2].set_title(algo_list[i])
-    axs[i % 3, i % 2].yaxis.set_label_text("count")
+    axs[i % 3, i % 2].yaxis.set_label_text("count / nbr of tests")
 
 f.suptitle("Coverage of the top " + str(K) + " aggregated scores")
 plt.subplots_adjust(
     left=0.055, bottom=0.076, right=0.994, top=0.907, wspace=0.072, hspace=0.238
 )
 
-plt.savefig(fname="temperature_coverage_aggregatedscore.png")
+plt.savefig(
+    fname="temperature_coverage_aggregatedscore_t="
+    + str(temp_list)[1:-1].replace(", ", "_")
+    + "_n_tests="
+    + str(n_tests)
+    + ".png"
+)
