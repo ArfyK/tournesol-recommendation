@@ -3,7 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 import sys
-from recommendation import CRITERIA, random_greedy, random
+from recommendation import CRITERIA, random_greedy, random, aggregated_score
 
 
 #### DATA SET UP ####
@@ -11,7 +11,7 @@ df = pd.read_csv(sys.argv[1])
 
 #### TESTS ####
 if len(sys.argv) < 3:  # no results file provided
-    n_tests = 1
+    n_tests = 100
 
     alpha = 0.5  # exponent of the power function used in the objective function
 
@@ -29,7 +29,7 @@ if len(sys.argv) < 3:  # no results file provided
         for t in temp_list:
             m = (df[CRITERIA] - df[CRITERIA].min()).mean().mean()
 
-            rg = random_greedy(df, n_vid=n_vid, alpha=alpha, l = 1/10*m , T=t)
+            rg = random_greedy(df, n_vid=n_vid, alpha=alpha, l=1 / 10 * m, T=t)
             maxs_rg = (
                 df.loc[df["uid"].isin(rg["uids"]), CRITERIA]
                 .max()
@@ -37,48 +37,52 @@ if len(sys.argv) < 3:  # no results file provided
                 .to_list()
             )
             results.append(
-                [k + 1, "rg_l=1/10*m_" + str(t), rg["uids"], rg["obj"]] + maxs_rg
+                [k + 1, "rg_l=1/10*m_t=" + str(t), alpha, rg["uids"], rg["obj"]]
+                + maxs_rg
             )
 
-        r_50 = random(df, n_vid=n_vid, alpha=alpha, pre_selection=True, quantile=0.5)
-        maxs_50 = (
-            df.loc[df["uid"].isin(r_50["uids"]), CRITERIA].max().divide(maxs).to_list()
+        r_75 = random(df, n_vid=n_vid, alpha=alpha, pre_selection=True, quantile=0.75)
+        maxs_75 = (
+            df.loc[df["uid"].isin(r_75["uids"]), CRITERIA].max().divide(maxs).to_list()
         )
         results.append(
             [
                 k + 1,
-                "r_50",
+                "r_75",
                 alpha,
-                r_50["uids"],
-                r_50["obj"],
+                r_75["uids"],
+                r_75["obj"],
             ]
-            + maxs_50
+            + maxs_75
         )
 
-        r_50 = random(
+        r_agg_75 = random(
             df,
             n_vid=n_vid,
             alpha=alpha,
             pre_selection=True,
-            quantile=0.5,
+            quantile=0.75,
             key=aggregated_score,
         )
-        maxs_50 = (
-            df.loc[df["uid"].isin(r_50["uids"]), CRITERIA].max().divide(maxs).to_list()
+        maxs_agg_75 = (
+            df.loc[df["uid"].isin(r_agg_75["uids"]), CRITERIA]
+            .max()
+            .divide(maxs)
+            .to_list()
         )
         results.append(
             [
                 k + 1,
-                "r_agg_50",
+                "r_agg_75",
                 alpha,
-                r_50["uids"],
-                r_50["obj"],
+                r_agg_75["uids"],
+                r_agg_75["obj"],
             ]
-            + maxs_50
+            + maxs_agg_75
         )
 
     # Set up a dataframe to hold the results
-    columns = ["test", "algorithm", "uids", "objective_value"] + CRITERIA
+    columns = ["test", "algorithm", "alpha", "uids", "objective_value"] + CRITERIA
     results = pd.DataFrame(data=results, columns=columns).set_index("test")
 
     results.to_csv("temp_tuning_" + "n_test=" + str(n_tests) + ".csv")
@@ -173,7 +177,7 @@ coverage[algo_list] = coverage[algo_list] * len(algo_list) / results.size
 f, axs = plt.subplots(3, 2, figsize=(13, 7), sharex=True, sharey=True)
 for i in range(len(algo_list)):
     sns.barplot(data=coverage, x="rank", y=algo_list[i], ax=axs[i % 3, i % 2])
-    axs[i % 3, i % 2].axhline(y=results["test"].max() / 200)
+    axs[i % 3, i % 2].axhline(y=results.index.max() / K)
     axs[i % 3, i % 2].set_title(algo_list[i])
     axs[i % 3, i % 2].yaxis.set_label_text("count")
 
@@ -211,7 +215,7 @@ coverage[algo_list] = coverage[algo_list] * len(algo_list) / results.size
 f, axs = plt.subplots(3, 2, figsize=(13, 7), sharex=True, sharey=True)
 for i in range(len(algo_list)):
     sns.barplot(data=coverage, x="rank", y=algo_list[i], ax=axs[i % 3, i % 2])
-    axs[i % 3, i % 2].axhline(y=results["test"].max() / 200)
+    axs[i % 3, i % 2].axhline(y=results.index.max() / K)
     axs[i % 3, i % 2].set_title(algo_list[i])
     axs[i % 3, i % 2].yaxis.set_label_text("count")
 
