@@ -197,13 +197,13 @@ def compute_coverage(coverage_df, result_series):
 results.apply(lambda x: compute_coverage(coverage, x), axis=1)
 coverage[algo_list] = coverage[algo_list] * len(algo_list) / results.shape[0]
 
-f, axs = plt.subplots(3, 2, figsize=(13, 7), sharex=True, sharey = True)
+f, axs = plt.subplots(3, 2, figsize=(13, 7), sharex=True, sharey=True)
 for i in range(len(algo_list)):
     sns.barplot(data=coverage, x="rank", y=algo_list[i], ax=axs[i % 3, i % 2])
     axs[i % 3, i % 2].set_title(algo_list[i])
     axs[i % 3, i % 2].set_yscale("log")
     axs[i % 3, i % 2].yaxis.set_major_locator(MultipleLocator(0.25))
-    axs[i % 3, i % 2].tick_params(which='major', width=1.0, length=10)    
+    axs[i % 3, i % 2].tick_params(which="major", width=1.0, length=10)
     axs[i % 3, i % 2].yaxis.set_label_text("count / nbr of tests")
 
 f.suptitle("Coverage of the top " + str(K) + " tournesol scores")
@@ -243,13 +243,13 @@ coverage[algo_list] = np.zeros((K, len(algo_list)))
 results.apply(lambda x: compute_coverage(coverage, x), axis=1)
 coverage[algo_list] = coverage[algo_list] * len(algo_list) / results.shape[0]
 
-f, axs = plt.subplots(3, 2, figsize=(13, 7), sharex=True, sharey = True)
+f, axs = plt.subplots(3, 2, figsize=(13, 7), sharex=True, sharey=True)
 for i in range(len(algo_list)):
     sns.barplot(data=coverage, x="rank", y=algo_list[i], ax=axs[i % 3, i % 2])
     axs[i % 3, i % 2].set_title(algo_list[i])
-    axs[i % 3, i % 2].set_yscale("log")  
+    axs[i % 3, i % 2].set_yscale("log")
     axs[i % 3, i % 2].yaxis.set_major_locator(MultipleLocator(0.25))
-    axs[i % 3, i % 2].tick_params(which='major', width=1.0, length=10, labelsize=14)    
+    axs[i % 3, i % 2].tick_params(which="major", width=1.0, length=10, labelsize=14)
     axs[i % 3, i % 2].yaxis.set_label_text("count / nbr of tests")
 
 f.suptitle("Coverage of the top " + str(K) + " aggregated scores")
