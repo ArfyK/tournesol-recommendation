@@ -200,6 +200,7 @@ f, axs = plt.subplots(3, 2, figsize=(13, 7), sharex=True)
 for i in range(len(algo_list)):
     sns.barplot(data=coverage, x="rank", y=algo_list[i], ax=axs[i % 3, i % 2])
     axs[i % 3, i % 2].set_title(algo_list[i])
+    axs[i % 3, i % 2].set_yscale("log")  # for readability
     axs[i % 3, i % 2].yaxis.set_label_text("count / nbr of tests")
 
 f.suptitle("Coverage of the top " + str(K) + " tournesol scores")
@@ -243,6 +244,7 @@ f, axs = plt.subplots(3, 2, figsize=(13, 7), sharex=True)
 for i in range(len(algo_list)):
     sns.barplot(data=coverage, x="rank", y=algo_list[i], ax=axs[i % 3, i % 2])
     axs[i % 3, i % 2].set_title(algo_list[i])
+    axs[i % 3, i % 2].set_yscale("log")  # for readability
     axs[i % 3, i % 2].yaxis.set_label_text("count / nbr of tests")
 
 f.suptitle("Coverage of the top " + str(K) + " aggregated scores")
