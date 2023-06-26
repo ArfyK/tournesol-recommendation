@@ -18,7 +18,7 @@ if len(sys.argv) < 3:  # no results file provided
 
     n_vid = 10
 
-    temp_list = [0.01, 0.1, 1, 10, 100]
+    temp_list = [20, 40, 60, 80]
 
     results = []
 
