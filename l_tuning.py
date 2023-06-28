@@ -140,7 +140,7 @@ if len(sys.argv) < 3:  # no results file provided
     columns = ["test", "algorithm", "alpha", "uids", "objective_value"] + CRITERIA
     results = pd.DataFrame(data=results, columns=columns).set_index("test")
 
-    results.to_csv("dg_r_" + "n_test=" + str(n_tests) + "_size=" + str(size) + ".csv")
+    results.to_csv("l_tuning_" + "n_test=" + str(n_tests) + "_size=" + str(size) + ".csv")
 
 #### PLOTS ####
 
@@ -198,4 +198,4 @@ plt.subplots_adjust(
     left=0.08, bottom=0.074, right=0.998, top=0.976, wspace=0.062, hspace=0.264
 )
 
-f.savefig(fname="dg_r_comparison.png")
+f.savefig(fname="l_tuning.png")

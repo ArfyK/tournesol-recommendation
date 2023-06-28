@@ -1,6 +1,24 @@
-**Table of Content**
-
+**List of Files**
+  - `l_comparison.py`
   - `temperature_tuning.py`
+
+## `l_comparison.py`
+This script compares to value for the `l` parameter used in the objective function `F` defined in `recommendation.py`:
+  - the default l = 1/10;
+  - l = m * 1/10 where m is the mean of all criterias means. At first this value was supposed to ensure that the two terms in `F` are homogeneous to a score. But as I'm writing these lines I realise that I should have used sqrt(m) ! As we will see below, the results are nonetheless pretty good so I keep it that way for now. Fine tuning the parameter should be done later.  
+
+# How to use the script
+First set the tests parameters in the script:
+  - the number of tests `n_tests`;
+  - the size of the subdatasets that will be sampled for each test `size`; 
+
+Then to run the script using the dataset tournesol_scores_2023-05-04.csv type:
+`python3 l_tuning.py tournesol_scores_2023-05-04.csv`
+
+
+
+# Results analysis
+
 
 ## `temperature_tuning.py`
 This script performs tests several temperature parameters used in the `random_greedy` algorithm from `recommendation.py`. 
@@ -13,10 +31,10 @@ First set the tests parameters in the script:
   - the number of tests `n_tests`;
   - the list of temperature values to be tested `temp_list`.
 
-Then to run the script using the dataset data.csv type:
-`python3 temperature_tuning.py data.csv`
+Then to run the script using the dataset tournesol_scores_2023-05-04.csv type:
+`python3 temperature_tuning.py tournesol_scores_2023-05-04.csv`
 
-This will create several files: 
+This will create three files: 
   - `temp_tuning_n_test=<n>_t=<temp_list>.csv` containing the results 
   - `temperature_criteria_comparison_t=<temp_list>_n_tests=<n>.png` plotting and comparing the distribution of the maximum of each criteria and the number of channels featured in selections for each algorithm. 
   - `temperature_coverage_tournesolscore_t=<temp_list>n_tests=<n>.png` plotting the comparison of the coverage of the top 200 tournesol scores.
