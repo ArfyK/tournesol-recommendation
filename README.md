@@ -1,24 +1,36 @@
 **List of Files**
-  - `l_comparison.py`
+  - `l_tuning.py`
   - `temperature_tuning.py`
 
-## `l_comparison.py`
+## `l_tuning.py`
 This script compares to value for the `l` parameter used in the objective function `F` defined in `recommendation.py`:
   - the default l = 1/10;
   - l = m * 1/10 where m is the mean of all criterias means. At first this value was supposed to ensure that the two terms in `F` are homogeneous to a score. But as I'm writing these lines I realise that I should have used sqrt(m) ! As we will see below, the results are nonetheless pretty good so I keep it that way for now. Fine tuning the parameter should be done later.  
 
+These two parameters are also compared with three `random` algorithms:
+  - `random` which uniformly samples a bundles of videos without any prior selection;
+  - `r_50` (resp. `r_75`) which uniformly samples the bundle from the videos with a tournesol score above the median (resp. the third quartile);
+  - `r_agg_50` (resp. `r_agg_75`) which uniformly samples the bundle from the videos with an "aggregated score" above the median (resp. the third quartile). The "aggregated score" is actually the objective function applied on single video. It's defined in `recommendation.py`.
+
 # How to use the script
 First set the tests parameters in the script:
   - the number of tests `n_tests`;
-  - the size of the subdatasets that will be sampled for each test `size`; 
+  - the size of the subdatasets that will be sampled for each test `size`. 
 
 Then to run the script using the dataset tournesol_scores_2023-05-04.csv type:
 `python3 l_tuning.py tournesol_scores_2023-05-04.csv`
 
-
+This will create two files:
+  - `l_tuning_n_tests=<n>_size=<size>.csv` containing the results;
+  - `l_tuning.png' plotting the distribution of the maximum of each criteria. 
 
 # Results analysis
+On `l_tuning.png` we can observe that:
+  - except for the "engaging" criteria, l=1/10*m performs slightly better or similarly to l=1/10. Regarding the number of channel featured its median is 1 channel higher;
+  - `r_50` (resp. `r_75`) and `r_agg_50` (resp. `r_agg_75`) perform similarly. They out perform `random`; 
+  - regarding the criteria, the random algorithms are outperformed by the greedy ones. They are better in terms of number of channels.
 
+Those results led me to use l = 1/10*m for the tuning of the temperature.
 
 ## `temperature_tuning.py`
 This script performs tests several temperature parameters used in the `random_greedy` algorithm from `recommendation.py`. 
