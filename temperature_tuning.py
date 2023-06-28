@@ -3,7 +3,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 import sys
-from matplotlib.ticker import AutoMinorLocator, MultipleLocator
 from recommendation import CRITERIA, random_greedy, random, aggregated_score
 
 
@@ -202,8 +201,6 @@ for i in range(len(algo_list)):
     sns.barplot(data=coverage, x="rank", y=algo_list[i], ax=axs[i % 3, i % 2])
     axs[i % 3, i % 2].set_title(algo_list[i])
     axs[i % 3, i % 2].set_yscale("log")
-    axs[i % 3, i % 2].yaxis.set_major_locator(MultipleLocator(0.25))
-    axs[i % 3, i % 2].tick_params(which="major", width=1.0, length=10)
     axs[i % 3, i % 2].yaxis.set_label_text("count / nbr of tests")
 
 f.suptitle("Coverage of the top " + str(K) + " tournesol scores")
@@ -248,8 +245,6 @@ for i in range(len(algo_list)):
     sns.barplot(data=coverage, x="rank", y=algo_list[i], ax=axs[i % 3, i % 2])
     axs[i % 3, i % 2].set_title(algo_list[i])
     axs[i % 3, i % 2].set_yscale("log")
-    axs[i % 3, i % 2].yaxis.set_major_locator(MultipleLocator(0.25))
-    axs[i % 3, i % 2].tick_params(which="major", width=1.0, length=10, labelsize=14)
     axs[i % 3, i % 2].yaxis.set_label_text("count / nbr of tests")
 
 f.suptitle("Coverage of the top " + str(K) + " aggregated scores")
