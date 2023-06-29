@@ -48,9 +48,7 @@ if len(sys.argv) < 3:  # no results file provided
         results.append([k + 1, "dg_l=1/10", alpha, dg["uids"], dg["obj"]] + maxs_dg)
 
         m = (df[CRITERIA] - df[CRITERIA].min()).mean().mean()
-        dg = deterministic_greedy(
-            df, n_vid=n_vid, alpha=alpha, l=1 / 10 * m
-        )  # multiplying by m ensures the two terms in the objective function are "homogeneous"
+        dg = deterministic_greedy(df, n_vid=n_vid, alpha=alpha, l=1 / 10 * m)
         maxs_dg = (
             df.loc[df["uid"].isin(dg["uids"]), CRITERIA].max().divide(maxs).to_list()
         )
@@ -140,7 +138,9 @@ if len(sys.argv) < 3:  # no results file provided
     columns = ["test", "algorithm", "alpha", "uids", "objective_value"] + CRITERIA
     results = pd.DataFrame(data=results, columns=columns).set_index("test")
 
-    results.to_csv("l_tuning_" + "n_test=" + str(n_tests) + "_size=" + str(size) + ".csv")
+    results.to_csv(
+        "l_tuning_" + "n_test=" + str(n_tests) + "_size=" + str(size) + ".csv"
+    )
 
 #### PLOTS ####
 

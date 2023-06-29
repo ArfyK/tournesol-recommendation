@@ -1,12 +1,13 @@
 #Temporary files
 *~
 
-#Environments
 env/
 
 __pycache__/
 
-#Image files
 *.png
 
 *.swp
+
+*.sh
+

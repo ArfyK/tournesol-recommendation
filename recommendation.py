@@ -277,9 +277,9 @@ if __name__ == "__main__":
 
     #### TESTS ####
     if len(sys.argv) < 3:  # no results file provided
-        n_tests = 1
+        n_tests = 100
 
-        size = 100
+        size = 1000
 
         alpha = 0.5  # exponent of the power function used in the objective function
 
@@ -295,7 +295,8 @@ if __name__ == "__main__":
             ]
             maxs = (df[CRITERIA] - df[CRITERIA].min()).max()
 
-            dg = deterministic_greedy(df, n_vid=n_vid, alpha=alpha)
+            m = (df[CRITERIA] - df[CRITERIA].min()).mean().mean()
+            dg = deterministic_greedy(df, n_vid=n_vid, alpha=alpha, l=1 / 10 * m)
             maxs_dg = (
                 df.loc[df["uid"].isin(dg["uids"]), CRITERIA]
                 .max()
@@ -303,10 +304,10 @@ if __name__ == "__main__":
                 .to_list()
             )
             results.append(
-                [k + 1, "deterministic_greedy", alpha, dg["uids"], dg["obj"]] + maxs_dg
+                [k + 1, "dg_l=1/10*m", alpha, dg["uids"], dg["obj"]] + maxs_dg
             )
 
-            rg = random_greedy(df, n_vid=n_vid, alpha=alpha)
+            rg = random_greedy(df, n_vid=n_vid, alpha=alpha, l=1 / 10 * m, T=80)
             maxs_rg = (
                 df.loc[df["uid"].isin(rg["uids"]), CRITERIA]
                 .max()
@@ -314,20 +315,14 @@ if __name__ == "__main__":
                 .to_list()
             )
             results.append(
-                [k + 1, "random_greedy", alpha, rg["uids"], rg["obj"]] + maxs_rg
+                [k + 1, "rg_l=1/10*m_T=80", alpha, rg["uids"], rg["obj"]] + maxs_rg
             )
 
-            r = random(df, n_vid=n_vid, alpha=alpha)
-            maxs_r = (
-                df.loc[df["uid"].isin(r["uids"]), CRITERIA].max().divide(maxs).to_list()
+            r_75 = random(
+                df, n_vid=n_vid, alpha=alpha, pre_selection=True, quantile=0.75
             )
-            results.append([k + 1, "random", alpha, r["uids"], r["obj"]] + maxs_r)
-
-            r_thresh_0 = random(
-                df, n_vid=n_vid, alpha=alpha, pre_selection=True, threshold=0
-            )
-            maxs_thresh_0 = (
-                df.loc[df["uid"].isin(r_thresh_0["uids"]), CRITERIA]
+            maxs_75 = (
+                df.loc[df["uid"].isin(r_75["uids"]), CRITERIA]
                 .max()
                 .divide(maxs)
                 .to_list()
@@ -335,32 +330,12 @@ if __name__ == "__main__":
             results.append(
                 [
                     k + 1,
-                    "random_threshold_0",
+                    "r_75",
                     alpha,
-                    r_thresh_0["uids"],
-                    r_thresh_0["obj"],
+                    r_75["uids"],
+                    r_75["obj"],
                 ]
-                + maxs_thresh_0
-            )
-
-            r_thresh_20 = random(
-                df, n_vid=n_vid, alpha=alpha, pre_selection=True, threshold=20
-            )
-            maxs_thresh_20 = (
-                df.loc[df["uid"].isin(r_thresh_20["uids"]), CRITERIA]
-                .max()
-                .divide(maxs)
-                .to_list()
-            )
-            results.append(
-                [
-                    k + 1,
-                    "random_threshold_20",
-                    alpha,
-                    r_thresh_20["uids"],
-                    r_thresh_20["obj"],
-                ]
-                + maxs_thresh_20
+                + maxs_75
             )
 
         # Set up a dataframe to hold the results
@@ -368,7 +343,12 @@ if __name__ == "__main__":
         results = pd.DataFrame(data=results, columns=columns).set_index("test")
 
         results.to_csv(
-            "tests_" + "n_test=" + str(n_tests) + "_size=" + str(size) + ".csv"
+            "algo_comparison_"
+            + "n_test="
+            + str(n_tests)
+            + "_size="
+            + str(size)
+            + ".csv"
         )
 
     #### PLOTS ####

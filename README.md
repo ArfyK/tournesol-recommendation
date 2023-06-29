@@ -1,6 +1,31 @@
 **List of Files**
+  - `recommendation.py`
   - `l_tuning.py`
   - `temperature_tuning.py`
+
+## `recommendation.py`
+This file contains the recommendation algorithms:
+  - `deterministic_greedy` which greedily optimizes the objective function F;
+  - `random_greedy` which, broadly speaking, samples the videos one by one using the probability distribution exp(T*F(S)) where T is a temperature parameter and F(S) is the objective value of the current bundle. 
+  - `random` uniformly samples the bundle. It can sample from the whole dataset or only from the set of videos scoring above some given quantile. Two types of scoring are available : the tournesol score (default) et the "aggregated score". The aggregated score of a video is a score that aggregates its tournesol score and the score of secondary criteria in a way resembling the objective function. 
+
+When run as a script it compares the `deterministic_greedy`, `random_greedy` and `random` algorithms using the parameters
+identified with `l_tuning.py` and `temp_tuning.py`, see below.
+
+# How to use the script
+First set the tests parameters in the script:
+  - the number of tests `n_tests`;
+  - the size of the subdatasets that will be sampled for each test `size`. 
+
+Then to run the script using the dataset tournesol_scores_2023-05-04.csv type:
+`python3 recommendation.py tournesol_scores_2023-05-04.csv` 
+
+This will create two files : 
+  - `algo_comparison_n_test=<n>_size=<size>.csv` containing the results;
+  - `algorithms_comparison.png` plotting the distribution of the maximum of each criteria. Those maximum are normalized by (x - min)/(max - min). 
+
+# Result analysis
+
 
 ## `l_tuning.py`
 This script compares to value for the `l` parameter used in the objective function `F` defined in `recommendation.py`:
