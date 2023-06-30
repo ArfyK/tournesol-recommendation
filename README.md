@@ -1,7 +1,8 @@
-**List of Files**
+**Table of contents**
   - `recommendation.py`
   - `l_tuning.py`
   - `temperature_tuning.py`
+  - Next steps
 
 ## `recommendation.py`
 This file contains the recommendation algorithms:
@@ -22,10 +23,14 @@ Then to run the script using the dataset tournesol_scores_2023-05-04.csv type:
 
 This will create two files : 
   - `algo_comparison_n_test=<n>_size=<size>.csv` containing the results;
-  - `algorithms_comparison.png` plotting the distribution of the maximum of each criteria. Those maximum are normalized by (x - min)/(max - min). 
+  - `algorithms_comparison.png` plotting the distribution of the maximum of each criteria. Those maximum are normalized according to (x - min)/(max - min). 
 
 # Result analysis
-
+On `algorithms_comparison.png` we can observe that:
+  - `deterministic_greedy` and `random_greedy` outperform the `random` algorithm;
+  - regarding the criterias the two greedy algorithms have similar performances except for the following criterias: 'importance', 'largely_recommended', 'diversity_inclusion', 'engaging' where `deterministic_greedy' performs better;
+  - the two random algorithms seem to feature slightly more channels than the deterministic one. 
+  - the 'entertaining_relaxing' criteria features **negative maximums** which should not be possible given the normalization we used.
 
 ## `l_tuning.py`
 This script compares to value for the `l` parameter used in the objective function `F` defined in `recommendation.py`:
@@ -54,6 +59,7 @@ On `l_tuning.png` we can observe that:
   - except for the "engaging" criteria, l=1/10*m performs slightly better or similarly to l=1/10. Regarding the number of channel featured its median is 1 channel higher;
   - `r_50` (resp. `r_75`) and `r_agg_50` (resp. `r_agg_75`) perform similarly. They out perform `random`; 
   - regarding the criteria, the random algorithms are outperformed by the greedy ones. They are better in terms of number of channels.
+  - the criterias 'diversity_inclusion', 'layman_friendly', 'backfiring_risks', 'entertaining_relaxing' and 'reliability' feature **negative maximums** which should not be possible given the normalization we used.
 
 Those results led me to use l = 1/10*m for the tuning of the temperature.
 
@@ -84,6 +90,7 @@ First recall that the probablity distribution is p(x) = exp(T*x).
 On temperature_criteria_comparison_t\=0.01_0.1_1.0_10.0_100.0_n_tests\=100.0.png we can observe that: 
   - as expected the higher temperature T=100 outperforms the rest, followed by T=10. The three last seem to have quite similar performances;
   - the two `random` algorithms have similar performances and seem to have slightly better performances than the `random_greedy` ones, expect for T=100.
+  - the criterias 'diversity_inclusion', 'layman_friendly', 'backfiring_risks', 'entertaining_relaxing' and 'reliability' feature **negative maximums** which should not be possible given the normalization we used.
 
 On temperature_coverage_tournesolscore_t=0.01_0.1_1.0_10.0_100.0n_tests=100.0.png (the other coverage plot using the aggregated scores is similar) we can observe that: 
   - the two `random` algorithms seem to well cover the top 200 with frequencies between 1% and 4%;
@@ -97,6 +104,7 @@ On temperature_criteria_comparison_t=20.0_40.0_60.0_80.0_n_tests=100.0.png we ca
   - the performances are approximately sorted according to the temperature;
   - on some criterias the temperatures above 20 have a signficantly lower dispersion despite having better scores;
   - T=20 performs slightly better than the two `random` algorithms.
+  - the criteria 'entertaining_relaxing' features **negative maximums** which should not be possible given the normalization we used.
 
 On temperature_coverage_tournesolscore_t=20.0_40.0_60.0_80.0n_tests=100.0.png (the other coverage plot using the aggregated scores is similar) we can observe that: 
   - only the top 100 is well covered by the `random_greedy` algorithms;
@@ -105,3 +113,9 @@ On temperature_coverage_tournesolscore_t=20.0_40.0_60.0_80.0n_tests=100.0.png (t
   - except for a few videos, T=40 and the `random` algorithms perform similarly.
 
 In conclusion, because of the issue of the three over-chosen videos, it is unclear to me what temperature should be chosen between 60, 80 and 100 (or maybe even a higher one). 
+
+## Next steps
+  - Investigate the presence of negative maximums;
+  - investigate the videos that are chosen too frequently. Or maybe change the way we introduce the randomness. We could first uniformly sample a subset of videos in the top 200 and then perform `deterministic_random` on this subset. We could also count how many times each video is recommended and add a term in the scoring function that gives more chance to be selected to videos that have been selected less times
+  - Add a term about the number of channels in the objective function;
+  -  Add a term for the recency of videos in the objective function.
