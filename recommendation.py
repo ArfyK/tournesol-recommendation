@@ -136,7 +136,7 @@ def random_greedy(data, n_vid=10, q=0.15, l=1 / 10, alpha=0.5, T=1):
         )
         # Compute the probability distribution
         p = obj.divide(obj.mean()).apply(
-            lambda x: np.exp(T * x)
+            lambda x: np.exp(x / T)
         )  # objective value are normalized
         norm = p.sum()
         p = p.apply(lambda x: x / norm)
@@ -171,7 +171,7 @@ def random_greedy(data, n_vid=10, q=0.15, l=1 / 10, alpha=0.5, T=1):
 
         # Compute the probability distribution
         p = obj.divide(obj.mean()).apply(
-            lambda x: np.exp(T * x)
+            lambda x: np.exp(x / T)
         )  # objective value are normalized
         norm = p.sum()
         p = p.apply(lambda x: x / norm)
@@ -283,6 +283,8 @@ if __name__ == "__main__":
 
         alpha = 0.5  # exponent of the power function used in the objective function
 
+        T = 80 # temperature used in random_greedy
+
         n_vid = 10
 
         results = []
@@ -307,7 +309,7 @@ if __name__ == "__main__":
                 [k + 1, "dg_l=1/10*m", alpha, dg["uids"], dg["obj"]] + maxs_dg
             )
 
-            rg = random_greedy(df, n_vid=n_vid, alpha=alpha, l=1 / 10 * m, T=80)
+            rg = random_greedy(df, n_vid=n_vid, alpha=alpha, l=1 / 10 * m, T=T)
             maxs_rg = (
                 df.loc[df["uid"].isin(rg["uids"]), CRITERIA]
                 .max()

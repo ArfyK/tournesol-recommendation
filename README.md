@@ -7,7 +7,7 @@
 ## `recommendation.py`
 This file contains the recommendation algorithms:
   - `deterministic_greedy` which greedily optimizes the objective function F;
-  - `random_greedy` which, broadly speaking, samples the videos one by one using the probability distribution exp(T*F(S)) where T is a temperature parameter and F(S) is the objective value of the current bundle. 
+  - `random_greedy` which, broadly speaking, samples the videos one by one using the probability distribution exp(F(S)/T) where T is a temperature parameter and F(S) is the objective value of the current bundle. 
   - `random` uniformly samples the bundle. It can sample from the whole dataset or only from the set of videos scoring above some given quantile. Two types of scoring are available : the tournesol score (default) et the "aggregated score". The aggregated score of a video is a score that aggregates its tournesol score and the score of secondary criteria in a way resembling the objective function. 
 
 When run as a script it compares the `deterministic_greedy`, `random_greedy` and `random` algorithms using the parameters
@@ -16,7 +16,8 @@ identified with `l_tuning.py` and `temp_tuning.py`, see below.
 # How to use the script
 First set the tests parameters in the script:
   - the number of tests `n_tests`;
-  - the size of the subdatasets that will be sampled for each test `size`. 
+  - the size of the subdatasets that will be sampled for each test `size`; 
+  - the temperature `T`.
 
 Then to run the script using the dataset tournesol_scores_2023-05-04.csv type:
 `python3 recommendation.py tournesol_scores_2023-05-04.csv` 
@@ -88,31 +89,32 @@ First recall that the probablity distribution is p(x) = exp(T*x).
 
 **T in [0.01, 0.1, 1, 10, 100]**
 On temperature_criteria_comparison_t\=0.01_0.1_1.0_10.0_100.0_n_tests\=100.0.png we can observe that: 
-  - as expected the higher temperature T=100 outperforms the rest, followed by T=10. The three last seem to have quite similar performances;
-  - the two `random` algorithms have similar performances and seem to have slightly better performances than the `random_greedy` ones, expect for T=100.
+  - as expected the lower temperature T=0.01 outperforms the rest, followed by T=0.1. The other three seem to have quite similar performances;
+
+  - the two `random` algorithms have similar performances and seem to have slightly better performances than the `random_greedy` ones, expect for T=0.01.
   - the criterias 'diversity_inclusion', 'layman_friendly', 'backfiring_risks', 'entertaining_relaxing' and 'reliability' feature **negative maximums** which should not be possible given the normalization we used.
 
 On temperature_coverage_tournesolscore_t=0.01_0.1_1.0_10.0_100.0n_tests=100.0.png (the other coverage plot using the aggregated scores is similar) we can observe that: 
   - the two `random` algorithms seem to well cover the top 200 with frequencies between 1% and 4%;
-  - the two `random` algorithms outperform the `random_greedy` ones except for T=100;
-  - the higher temperature covers well the top 100 with frequencies between 2 and 10%. Some videos have significantly higher frequencies (hence the use of a log scale): 20% for a few videos, about 70% for one video and close to 100% for two videos (one of those two videos is also always chosen by T=10).
+  - the two `random` algorithms outperform the `random_greedy` ones except for T=0.01;
+  - the higher temperature covers well the top 100 with frequencies between 2 and 10%. Some videos have significantly higher frequencies (hence the use of a log scale): 20% for a few videos, about 70% for one video and close to 100% for two videos (one of those two videos is also always chosen by T=0.1).
 
-Those quite high frequencies led me to investigate the temperatures between 10 and 100.
+Those quite high frequencies led me to investigate the temperatures between 0.01 and 0.1.
 
-**T in [20, 40, 60, 80]**
+**T in [1/20, 1/40, 1/60, 1/80]**
 On temperature_criteria_comparison_t=20.0_40.0_60.0_80.0_n_tests=100.0.png we can observe that: 
   - the performances are approximately sorted according to the temperature;
-  - on some criterias the temperatures above 20 have a signficantly lower dispersion despite having better scores;
-  - T=20 performs slightly better than the two `random` algorithms.
+  - on some criterias the temperatures below 1/20 have a signficantly lower dispersion despite having better scores;
+  - T=1/20 performs slightly better than the two `random` algorithms.
   - the criteria 'entertaining_relaxing' features **negative maximums** which should not be possible given the normalization we used.
 
 On temperature_coverage_tournesolscore_t=20.0_40.0_60.0_80.0n_tests=100.0.png (the other coverage plot using the aggregated scores is similar) we can observe that: 
   - only the top 100 is well covered by the `random_greedy` algorithms;
   - the three same videos as before are chosen too often;
-  - T=60 and T=80 have a slightly more cover the top 200 than T=100;
-  - except for a few videos, T=40 and the `random` algorithms perform similarly.
+  - T=1/60 and T=1/80 have a slightly more cover the top 200 than T=1/100;
+  - except for a few videos, T=1/40 and the `random` algorithms perform similarly.
 
-In conclusion, because of the issue of the three over-chosen videos, it is unclear to me what temperature should be chosen between 60, 80 and 100 (or maybe even a higher one). 
+In conclusion, because of the issue of the three over-chosen videos, it is unclear to me what temperature should be chosen between 1/60, 1/80 and 1/100 (or maybe even a higher one). 
 
 ## Next steps
   - Investigate the presence of negative maximums;
