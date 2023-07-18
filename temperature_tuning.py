@@ -192,9 +192,17 @@ def compute_coverage(coverage_df, result_series):
         + 1
     )
 
-
 results.apply(lambda x: compute_coverage(coverage, x), axis=1)
 coverage[algo_list] = coverage[algo_list] * len(algo_list) / results.shape[0]
+
+coverage.to_csv(
+    'coverage_'
+    + 'tournesolscore_t='
+    + str(temp_list)[1:-1].replace(", ", "_")
+    + "n_tests="
+    + str(n_tests)
+    + '.csv'
+)
 
 f, axs = plt.subplots(3, 2, figsize=(13, 7), sharex=True, sharey=True)
 for i in range(len(algo_list)):
