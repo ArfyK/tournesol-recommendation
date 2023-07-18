@@ -68,7 +68,9 @@ def deterministic_greedy(data, n_vid=10, q=0.15, l=1 / 10, alpha=0.5):
         )
 
         # Update S1 and partial sums
-        new = df.loc[obj.idxmax(), "uid"]
+        print(obj.idxmax())
+        new = df.at[obj.idxmax(), 'uid']
+        print(new)
         S1.append(new)
         partial_sums = (partial_sums + df.loc[df["uid"] == new, CRITERIA]).iloc[
             0
@@ -105,6 +107,40 @@ def deterministic_greedy(data, n_vid=10, q=0.15, l=1 / 10, alpha=0.5):
     objective2 = obj.max()
 
     return {"uids": S1 + S2, "obj": objective1 + objective2}
+
+
+# Functions used to pre-select a subset of the dataset prior to sampling 
+def rank_by_tournesol_score(series, l, alpha):
+    return series["largely_recommended"]
+
+
+def aggregated_score(series, l, alpha):
+    # Resembles the F objective function
+    return series["largely_recommended"] + l * series[CRITERIA[1:]].sum()
+
+
+def deterministic_random_sample(
+        data, 
+        n_vid=10, 
+        q=0.15, 
+        l=1 / 10, 
+        alpha=0.5,
+        n_sample=50,
+        quantile=0,
+        key=rank_by_tournesol_score,
+):
+
+    # Normalizes the dataframe
+    df = data.copy()  # copy the dataframe to avoid modifying the original
+    df[CRITERIA] = df[CRITERIA] - df[CRITERIA].min()
+    df = df.fillna(0)
+
+    #Sample a subset 
+    df["key"] = df.apply(lambda x: key(x, l, alpha), axis="columns")
+    df = df.loc[df["key"] >= df["key"].quantile(quantile)]
+    sample = df.loc[np.random.choice(df.index, n_sample)]
+
+    return deterministic_greedy(sample[CRITERIA+['uid']], n_vid=n_vid, alpha=alpha, l=l, q=q)
 
 
 def random_greedy(data, n_vid=10, q=0.15, l=1 / 10, alpha=0.5, T=1):
@@ -196,17 +232,6 @@ def random_greedy(data, n_vid=10, q=0.15, l=1 / 10, alpha=0.5, T=1):
 
 ### Random sampling
 
-
-# Functions used to do pre-select a subset of the dataset prior to sampling in random
-def rank_by_tournesol_score(series, l, alpha):
-    return series["largely_recommended"]
-
-
-def aggregated_score(series, l, alpha):
-    # Resembles the F objective function
-    return series["largely_recommended"] + l * series[CRITERIA[1:]].sum()
-
-
 def random(
     data,
     n_vid=10,
@@ -277,15 +302,15 @@ if __name__ == "__main__":
 
     #### TESTS ####
     if len(sys.argv) < 3:  # no results file provided
-        n_tests = 100
+        n_tests = 10
 
-        size = 1000
+        size = 100
 
         alpha = 0.5  # exponent of the power function used in the objective function
 
         T = 80 # temperature used in random_greedy
 
-        n_vid = 10
+        n_vid = 5
 
         results = []
 
@@ -297,8 +322,7 @@ if __name__ == "__main__":
             ]
             maxs = (df[CRITERIA] - df[CRITERIA].min()).max()
 
-            m = (df[CRITERIA] - df[CRITERIA].min()).mean().mean()
-            dg = deterministic_greedy(df, n_vid=n_vid, alpha=alpha, l=1 / 10 * m)
+            dg = deterministic_greedy(df, n_vid=n_vid, alpha=alpha, l=1 / 10 )
             maxs_dg = (
                 df.loc[df["uid"].isin(dg["uids"]), CRITERIA]
                 .max()
@@ -306,10 +330,30 @@ if __name__ == "__main__":
                 .to_list()
             )
             results.append(
-                [k + 1, "dg_l=1/10*m", alpha, dg["uids"], dg["obj"]] + maxs_dg
+                [k + 1, "dg_l=1/10", alpha, dg["uids"], dg["obj"]] + maxs_dg
             )
 
-            rg = random_greedy(df, n_vid=n_vid, alpha=alpha, l=1 / 10 * m, T=T)
+            dg_random_sample = deterministic_random_sample(
+                    df, 
+                    n_vid=n_vid, 
+                    q=0.15, 
+                    l=1 / 10, 
+                    alpha=alpha,
+                    n_sample=50,
+                    quantile=0.5,
+                    key=rank_by_tournesol_score,
+            )
+            maxs_dg_random_sample = (
+                df.loc[df["uid"].isin(dg_random_sample["uids"]), CRITERIA]
+                .max()
+                .divide(maxs)
+                .to_list()
+            )
+            results.append(
+                [k + 1, "dg_random_sample_l=1/10", alpha, dg_random_sample["uids"], dg_random_sample["obj"]] + maxs_dg_random_sample
+            )
+
+            rg = random_greedy(df, n_vid=n_vid, alpha=alpha, l=1 / 10, T=T)
             maxs_rg = (
                 df.loc[df["uid"].isin(rg["uids"]), CRITERIA]
                 .max()
@@ -317,7 +361,7 @@ if __name__ == "__main__":
                 .to_list()
             )
             results.append(
-                [k + 1, "rg_l=1/10*m_T=80", alpha, rg["uids"], rg["obj"]] + maxs_rg
+                [k + 1, "rg_l=1/10_T=80", alpha, rg["uids"], rg["obj"]] + maxs_rg
             )
 
             r_75 = random(
@@ -409,4 +453,5 @@ if __name__ == "__main__":
         left=0.12, bottom=0.074, right=0.998, top=0.976, wspace=0.062, hspace=0.264
     )
 
-    f.savefig(fname="algorithms_comparison.png")
+    plt.show()
+    #f.savefig(fname="algorithms_comparison.png")
