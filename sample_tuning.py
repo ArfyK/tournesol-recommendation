@@ -22,9 +22,11 @@ if len(sys.argv) < 3:  # no results file provided
 
     n_vid = 10
 
-    q = 0.5
+    q = 0.15
 
-    size_list = [20, 40, 60, 80]
+    quantile = 0.5
+
+    size_list = [20, 90, 160, 230, 300]
 
     results = []
 
@@ -41,7 +43,7 @@ if len(sys.argv) < 3:  # no results file provided
                 l=1 / 10,
                 alpha=alpha,
                 n_sample=n,
-                quantile=0.5,
+                quantile=quantile,
                 key=rank_by_tournesol_score,
             )
             maxs_dg_random_sample = (
@@ -53,7 +55,7 @@ if len(sys.argv) < 3:  # no results file provided
             results.append(
                 [
                     k + 1,
-                    "g_sample_q=" + str(q) + "_n=" + str(n),
+                    "g_sample_q=" + str(quantile) + "_n=" + str(n),
                     dg_random_sample["uids"],
                     dg_random_sample["obj"],
                 ]
@@ -79,13 +81,13 @@ if len(sys.argv) < 3:  # no results file provided
     results = pd.DataFrame(data=results, columns=columns).set_index("test")
 
     results.to_csv(
-        "sample_size__"
+        "sample_size_"
         + "n_test="
         + str(n_tests)
         + "_size="
         + str(size_list)[1:-1].replace(", ", "_")
         + "_q="
-        + str(q)
+        + str(quantile)
         + ".csv"
     )
 
@@ -100,8 +102,9 @@ if len(sys.argv) == 3:  # results file provided
     algo_list = results["algorithm"].unique()
     n_tests = results.shape[0] / len(algo_list)
     # hack to retrieve the sample size from the algo name
-    size_list = [int(algo.split("_").pop().split("=").pop()) for algo in algo_list]
-
+    size_list = [int(algo.split("_").pop().split("=").pop()) for algo in algo_list[:-1]]
+    # hack to retrive quantile from algo name
+    quantile = float(algo_list[0].split("_")[2].split("=").pop())
 
 X = ["objective_value"] + CRITERIA
 
@@ -154,7 +157,7 @@ plt.subplots_adjust(
 
 plt.savefig(
     fname="sample_size_criteria_comparison_q="
-    + str(q)
+    + str(quantile)
     + "_size="
     + str(size_list)[1:-1].replace(", ", "_")
     + "_n_tests="
@@ -194,7 +197,6 @@ f, axs = plt.subplots(3, 2, figsize=(13, 7), sharex=True, sharey=True)
 for i in range(len(algo_list)):
     sns.barplot(data=coverage, x="rank", y=algo_list[i], ax=axs[i % 3, i % 2])
     axs[i % 3, i % 2].set_title(algo_list[i])
-    axs[i % 3, i % 2].set_yscale("log")
     axs[i % 3, i % 2].yaxis.set_label_text("count / nbr of tests")
 
 f.suptitle("Coverage of the top " + str(K) + " tournesol scores")
@@ -203,8 +205,10 @@ plt.subplots_adjust(
 )
 
 plt.savefig(
-    fname="sample_size_coverage_n="
+    fname="sample_size_coverage_size="
     + str(size_list)[1:-1].replace(", ", "_")
+    + "_q="
+    + str(quantile)
     + "n_tests="
     + str(n_tests)
     + ".png"

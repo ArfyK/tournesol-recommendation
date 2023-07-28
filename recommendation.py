@@ -85,6 +85,10 @@ def deterministic_greedy(data, n_vid=10, q=0.15, l=1 / 10, alpha=0.5):
         ~df_incomplete["uid"].isin(S1)
     ]  # Remove videos that were already selected
 
+    # if the there's not enough videos remaining in df_incomplete we also use "complete" videos
+    if df_incomplete.shape[0] < n_incomplete:
+        df_incomplete = df.loc[~df["uid"].isin(S1), ["uid", "largely_recommended"]]
+
     for i in range(n_incomplete):
         # Compute the objective function
         obj = df_incomplete.loc[~df_incomplete["uid"].isin(S2)].apply(
@@ -92,7 +96,12 @@ def deterministic_greedy(data, n_vid=10, q=0.15, l=1 / 10, alpha=0.5):
         )
 
         # Update S2 and partial sums
-        new = df_incomplete.loc[obj.idxmax(), "uid"]
+        try:
+            new = df_incomplete.loc[obj.idxmax(), "uid"]
+        except:
+            print(df_incomplete.shape[0])
+            print(n_incomplete)
+            print(i)
         S2.append(new)
         partial_sum = (
             partial_sum
@@ -122,7 +131,6 @@ def deterministic_random_sample(
     q=0.15,
     l=1 / 10,
     alpha=0.5,
-    n_sample=50,
     quantile=0,
     key=rank_by_tournesol_score,
 ):
@@ -138,6 +146,7 @@ def deterministic_random_sample(
     return deterministic_greedy(
         sample[CRITERIA + ["uid"]], n_vid=n_vid, alpha=alpha, l=l, q=q
     )
+
 
 def random_greedy(data, n_vid=10, q=0.15, l=1 / 10, alpha=0.5, T=1):
     df = data.copy()  # copy the dataframe to avoid modifying the original
