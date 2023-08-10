@@ -1,14 +1,15 @@
 **Table of contents**
   - `recommendation.py`
-  - `l_tuning.py`
+  - `sample_tuning.py`
   - `temperature_tuning.py`
   - Next steps
 
 ## `recommendation.py`
-This file contains the recommendation algorithms:
+This file contains several recommendation algorithms:
   - `deterministic_greedy` which greedily optimizes the objective function F;
   - `random_greedy` which, broadly speaking, samples the videos one by one using the probability distribution exp(F(S)/T) where T is a temperature parameter and F(S) is the objective value of the current bundle. 
   - `random` uniformly samples the bundle. It can sample from the whole dataset or only from the set of videos scoring above some given quantile. Two types of scoring are available : the tournesol score (default) et the "aggregated score". The aggregated score of a video is a score that aggregates its tournesol score and the score of secondary criteria in a way resembling the objective function. 
+  - `deterministic_random_sample` which applies the greedy algorithm on a random sample of videos with a tournesol score above some specified quantile.
 
 When run as a script it compares the `deterministic_greedy`, `random_greedy` and `random` algorithms using the parameters
 identified with `l_tuning.py` and `temp_tuning.py`, see below.
@@ -33,39 +34,47 @@ On `algorithms_comparison.png` we can observe that:
   - the two random algorithms seem to feature slightly more channels than the deterministic one. 
   - the 'entertaining_relaxing' criteria features **negative maximums** which should not be possible given the normalization we used.
 
-## `l_tuning.py`
-This script compares to value for the `l` parameter used in the objective function `F` defined in `recommendation.py`:
-  - the default l = 1/10;
-  - l = m * 1/10 where m is the mean of all criterias means. At first this value was supposed to ensure that the two terms in `F` are homogeneous to a score. But as I'm writing these lines I realise that I should have used sqrt(m) ! As we will see below, the results are nonetheless pretty good so I keep it that way for now. Fine tuning the parameter should be done later.  
-
-These two parameters are also compared with three `random` algorithms:
-  - `random` which uniformly samples a bundles of videos without any prior selection;
-  - `r_50` (resp. `r_75`) which uniformly samples the bundle from the videos with a tournesol score above the median (resp. the third quartile);
-  - `r_agg_50` (resp. `r_agg_75`) which uniformly samples the bundle from the videos with an "aggregated score" above the median (resp. the third quartile). The "aggregated score" is actually the objective function applied on single video. It's defined in `recommendation.py`.
+## `sample_tuning.py`
+This script tests several combinations of quantile and sample size used in the `deterministic_random_sample` algorithm and compare them with the `random` algorithm used with q=0.75 (r_75).
 
 # How to use the script
 First set the tests parameters in the script:
   - the number of tests `n_tests`;
-  - the size of the subdatasets that will be sampled for each test `size`. 
+  - the quantile `quantile`;
+  - the list of sample sizes `size_list`
 
 Then to run the script using the dataset tournesol_scores_2023-05-04.csv type:
-`python3 l_tuning.py tournesol_scores_2023-05-04.csv`
+`python3 sample_tuning.py tournesol_scores_2023-05-04.csv`
 
-This will create two files:
-  - `l_tuning_n_tests=<n>_size=<size>.csv` containing the results;
-  - `l_tuning.png' plotting the distribution of the maximum of each criteria. 
+This will create three files: 
+  - `sample_size_n_test=<n>_size=<size_list>_q=<quantile>.csv` containing the results; 
+  - `sample_size_criteria_comparison_q=<quantile>_size=<size_list>_n_tests=<n>.png` plotting and comparing the distribution of the maximum of each criteria and the number of channels featured in selections for each algorithm; 
+  - `sample_size_coverage_size=<size_list>_q=<quantile>_n_tests=<n>.png` plotting the comparison of the coverage of the top 200 tournesol scores for each algorithm.
 
 # Results analysis
-On `l_tuning.png` we can observe that:
-  - except for the "engaging" criteria, l=1/10*m performs slightly better or similarly to l=1/10. Regarding the number of channel featured its median is 1 channel higher;
-  - `r_50` (resp. `r_75`) and `r_agg_50` (resp. `r_agg_75`) perform similarly. They out perform `random`; 
-  - regarding the criteria, the random algorithms are outperformed by the greedy ones. They are better in terms of number of channels.
-  - the criterias 'diversity_inclusion', 'layman_friendly', 'backfiring_risks', 'entertaining_relaxing' and 'reliability' feature **negative maximums** which should not be possible given the normalization we used.
+We tested several sample size for both q=0.5 and q=0.75. The algorithms' performances were mainly assessed according to their coverage of the top 200, more precisely:
+  1) no video should appear in more than 20% of the bundles;
+  2) all videos from the top 100 should appear in at least 1% of the bundles.Those criterias lead to look for sample size between 20 and 160.
 
-Those results led me to use l = 1/10*m for the tuning of the temperature.
+**q = 0.75 and sample size in [40, 65, 90, 115, 140]**
+On sample_size_criteria_comparison_q\=0.75_size\=40_65_90_115_140_n_tests\=500.png we observe that: 
+  - The objective value is increasing with the sample size. It remains above r_75 for all sizes;
+  - all sample sizes have better performances than r_75 with respect to the following criterias: diversity_inclusion, importance, engaging, largely_recommended, pedagogy, better_habits, reliability;
+  - the performances are approximately the same with respect to the following criterias: layman_friendly, entertaining_relaxing, backfiring_risk;
+  - The performances are increasing with the sample size for each criteria except entertaining_relaxing where it's decreasing;
+  - the number of channels featured in the bundle in decreasing with the sample size. r_75 features more channels.
+
+On sample_size_coverage_size\=40_65_90_115_140_q\=0.75n_tests\=500.png we observe that:
+  - r_75 uniformly covers the top 200 with a frequency of 1-2%;
+  - the size 40 also uniformly covers the top 200 with a higher frequency near 5%;
+  - the size should be less than 115 in order to satisfy the two criteria above;
+
+According to those results a sample size of 90 could be a good trade-off between performance and coverage. 
+
+**q = 0.5 and sample size in [40, 65, 90, 115, 140]**
 
 ## `temperature_tuning.py`
-This script performs tests several temperature parameters used in the `random_greedy` algorithm from `recommendation.py`. 
+This script tests several temperature parameters used in the `random_greedy` algorithm from `recommendation.py`. 
 The different `random_greedy` algorithms are also compared with two `random` algorithms:
   - the first uniformly samples videos having a tournesol score above the third quartile;
   - the second uniformly samples videos having an "aggregated" score above the third quartile.  
@@ -79,9 +88,9 @@ Then to run the script using the dataset tournesol_scores_2023-05-04.csv type:
 `python3 temperature_tuning.py tournesol_scores_2023-05-04.csv`
 
 This will create three files: 
-  - `temp_tuning_n_test=<n>_t=<temp_list>.csv` containing the results 
-  - `temperature_criteria_comparison_t=<temp_list>_n_tests=<n>.png` plotting and comparing the distribution of the maximum of each criteria and the number of channels featured in selections for each algorithm. 
-  - `temperature_coverage_tournesolscore_t=<temp_list>n_tests=<n>.png` plotting the comparison of the coverage of the top 200 tournesol scores.
+  - `temp_tuning_n_test=<n>_t=<temp_list>.csv` containing the results; 
+  - `temperature_criteria_comparison_t=<temp_list>_n_tests=<n>.png` plotting and comparing the distribution of the maximum of each criteria and the number of channels featured in selections for each algorithm; 
+  - `temperature_coverage_tournesolscore_t=<temp_list>n_tests=<n>.png` plotting the comparison of the coverage of the top 200 tournesol scores for each algorithm;
   - `temperature_coverage_aggregatedscore_t=<temp_list>_n_tests=<n>.png` plotting the comparison of the coverage of the top 200 aggregated scores. The aggregated score of a video is a score that aggregates its tournesol score and the score of secondary criteria in a way resembling the objective function. 
 
 # Results analysis
