@@ -127,6 +127,7 @@ def aggregated_score(series, l, alpha):
 
 def deterministic_random_sample(
     data,
+    sample_size,
     n_vid=10,
     q=0.15,
     l=1 / 10,
@@ -139,7 +140,7 @@ def deterministic_random_sample(
     # Sample a subset
     df["key"] = df.apply(lambda x: key(x, l, alpha), axis="columns")
     df = df.loc[df["key"] >= df["key"].quantile(quantile)]
-    sample = df.loc[np.random.choice(df.index, n_sample)]
+    sample = df.loc[np.random.choice(df.index, sample_size)]
 
     sample.reset_index(drop=True, inplace=True)
 

@@ -16,7 +16,7 @@ df = pd.read_csv(sys.argv[1])
 
 #### TESTS ####
 if len(sys.argv) < 3:  # no results file provided
-    n_tests = 1000
+    n_tests = 500
 
     alpha = 0.5  # exponent of the power function used in the objective function
 
@@ -26,7 +26,7 @@ if len(sys.argv) < 3:  # no results file provided
 
     quantile = 0.5
 
-    size_list = [20, 90, 160, 230, 300]
+    size_list = [40, 65, 90, 115, 140]
 
     results = []
 
@@ -42,7 +42,7 @@ if len(sys.argv) < 3:  # no results file provided
                 q=q,
                 l=1 / 10,
                 alpha=alpha,
-                n_sample=n,
+                sample_size=n,
                 quantile=quantile,
                 key=rank_by_tournesol_score,
             )
