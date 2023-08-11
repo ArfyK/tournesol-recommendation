@@ -35,7 +35,7 @@ On `algorithms_comparison.png` we can observe that:
   - the 'entertaining_relaxing' criteria features **negative maximums** which should not be possible given the normalization we used.
 
 ## `sample_tuning.py`
-This script tests several combinations of quantile and sample size used in the `deterministic_random_sample` algorithm and compare them with the `random` algorithm used with q=0.75 (r_75).
+This script tests several combinations of quantile and sample size used in the `deterministic_random_sample` algorithm and compare them with the `random` algorithm described above used with the quantile 0.75. It's denoted `r_75` in the plots.
 
 # How to use the script
 First set the tests parameters in the script:
@@ -52,7 +52,7 @@ This will create three files:
   - `sample_size_coverage_size=<size_list>_q=<quantile>_n_tests=<n>.png` plotting the comparison of the coverage of the top 200 tournesol scores for each algorithm.
 
 # Results analysis
-We tested several sample size for both q=0.5 and q=0.75. The algorithms' performances were mainly assessed according to their coverage of the top 200, more precisely:
+We tested several sample sizes for the two quantile values q=0.5 and q=0.75. The algorithms' performances were mainly assessed according to their coverage of the top 200, more precisely:
   1) no video should appear in more than 20% of the bundles;
   2) all videos from the top 100 should appear in at least 1% of the bundles.
 
@@ -95,6 +95,8 @@ On sample_size_coverage_size\=150_190_230_280_320_q\=0.5n_tests\=500.png we can 
 
 In conclusion if we are only interested in a good coverage of the top 100 we could use n=230.
 
+All the coverage plots show that a videos with a rank of about 150 is chosen as often as the first videos of the top. This is video is "Jean-Marc Jancovici - 'Oui, c'est toujours la merde'" by the channel "LIMIT". It has a high tournesol score and no score on the other criteria hence it's probably picked during the "second pass" of the algorithm that only uses the tournesol score. 
+ 
 ## `temperature_tuning.py`
 This script tests several temperature parameters used in the `random_greedy` algorithm from `recommendation.py`. 
 The different `random_greedy` algorithms are also compared with two `random` algorithms:
@@ -151,6 +153,5 @@ In conclusion, because of the issue of the three over-chosen videos, it is uncle
   - Investigate the presence of negative maximums;
   - Add a term about the number of channels in the objective function;
   - Add a term for the recency of videos in the objective function. 
-  - Investigate the videos that are chosen too frequently. 
   - Maybe change the way we introduce the randomness: we could count how many times each video is recommended and add a term in the scoring function that gives more chance to be selected to videos that have been selected less times
 
