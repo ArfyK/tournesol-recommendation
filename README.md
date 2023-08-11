@@ -54,7 +54,9 @@ This will create three files:
 # Results analysis
 We tested several sample size for both q=0.5 and q=0.75. The algorithms' performances were mainly assessed according to their coverage of the top 200, more precisely:
   1) no video should appear in more than 20% of the bundles;
-  2) all videos from the top 100 should appear in at least 1% of the bundles.Those criterias lead to look for sample size between 20 and 160.
+  2) all videos from the top 100 should appear in at least 1% of the bundles.
+
+For comparison `deterministic_greedy` obtains an objective value of about 709 on the complete dataset.
 
 **q = 0.75 and sample size in [40, 65, 90, 115, 140]**
 On sample_size_criteria_comparison_q\=0.75_size\=40_65_90_115_140_n_tests\=500.png we observe that: 
@@ -72,6 +74,26 @@ On sample_size_coverage_size\=40_65_90_115_140_q\=0.75n_tests\=500.png we observ
 According to those results a sample size of 90 could be a good trade-off between performance and coverage. 
 
 **q = 0.5 and sample size in [40, 65, 90, 115, 140]**
+On sample_size_criteria_comparison_q\=0.5_size\=40_65_90_115_140_n_tests\=500.png we observe that:
+  - the performance is increasing with n for the objective value and every criteria except layman_friendly, backfiref_risk and entertaining_relaxing where it's roughly constant;
+  - r_75 has lower performances on every criteria except on layman_friendly, backfiref_risk and entertaining_relaxing where the performances are similar;
+  - in terms of number of channels r_75 is slightly better. 
+
+On sample_size_coverage_size\=40_65_90_115_140_q\=0.5n_tests\=500.png we can observe that every parameters meets the two criteria above.
+
+These results lead me to test higher values for n.
+
+**q = 0.5 and sample size in [150, 190, 230, 280, 320]**
+On sample_size_criteria_comparison_q\=0.5_size\=150_190_230_280_320_n_tests\=500.png we can observe that:
+  - the objective value is still increasing with n;
+  - the performances are similar albeit increasing with n;
+  - the comparison with r_75 is qualitatively the same as before.
+
+On sample_size_coverage_size\=150_190_230_280_320_q\=0.5n_tests\=500.png we can observe that:
+  - n should be less than 300 to meet criteria 2) above;
+  - the videos ranked between 100 and 200 are barely covered with n above 200.
+
+In conclusion if we are only interested in a good coverage of the top 100 we could use n=230.
 
 ## `temperature_tuning.py`
 This script tests several temperature parameters used in the `random_greedy` algorithm from `recommendation.py`. 
@@ -127,6 +149,8 @@ In conclusion, because of the issue of the three over-chosen videos, it is uncle
 
 ## Next steps
   - Investigate the presence of negative maximums;
-  - investigate the videos that are chosen too frequently. Or maybe change the way we introduce the randomness. We could first uniformly sample a subset of videos in the top 200 and then perform `deterministic_random` on this subset. We could also count how many times each video is recommended and add a term in the scoring function that gives more chance to be selected to videos that have been selected less times
   - Add a term about the number of channels in the objective function;
-  -  Add a term for the recency of videos in the objective function.
+  - Add a term for the recency of videos in the objective function. 
+  - Investigate the videos that are chosen too frequently. 
+  - Maybe change the way we introduce the randomness: we could count how many times each video is recommended and add a term in the scoring function that gives more chance to be selected to videos that have been selected less times
+

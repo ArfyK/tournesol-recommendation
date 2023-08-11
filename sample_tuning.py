@@ -26,7 +26,7 @@ if len(sys.argv) < 3:  # no results file provided
 
     quantile = 0.5
 
-    size_list = [40, 65, 90, 115, 140]
+    size_list = [150, 190, 230, 280, 320]
 
     results = []
 
