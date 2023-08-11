@@ -59,6 +59,7 @@ We tested several sample sizes for the two quantile values q=0.5 and q=0.75. The
 For comparison `deterministic_greedy` obtains an objective value of about 709 on the complete dataset.
 
 **q = 0.75 and sample size in [40, 65, 90, 115, 140]**
+
 On sample_size_criteria_comparison_q\=0.75_size\=40_65_90_115_140_n_tests\=500.png we observe that: 
   - The objective value is increasing with the sample size. It remains above r_75 for all sizes;
   - all sample sizes have better performances than r_75 with respect to the following criterias: diversity_inclusion, importance, engaging, largely_recommended, pedagogy, better_habits, reliability;
@@ -74,6 +75,7 @@ On sample_size_coverage_size\=40_65_90_115_140_q\=0.75n_tests\=500.png we observ
 According to those results a sample size of 90 could be a good trade-off between performance and coverage. 
 
 **q = 0.5 and sample size in [40, 65, 90, 115, 140]**
+
 On sample_size_criteria_comparison_q\=0.5_size\=40_65_90_115_140_n_tests\=500.png we observe that:
   - the performance is increasing with n for the objective value and every criteria except layman_friendly, backfiref_risk and entertaining_relaxing where it's roughly constant;
   - r_75 has lower performances on every criteria except on layman_friendly, backfiref_risk and entertaining_relaxing where the performances are similar;
@@ -84,6 +86,7 @@ On sample_size_coverage_size\=40_65_90_115_140_q\=0.5n_tests\=500.png we can obs
 These results lead me to test higher values for n.
 
 **q = 0.5 and sample size in [150, 190, 230, 280, 320]**
+
 On sample_size_criteria_comparison_q\=0.5_size\=150_190_230_280_320_n_tests\=500.png we can observe that:
   - the objective value is still increasing with n;
   - the performances are similar albeit increasing with n;
@@ -121,6 +124,7 @@ This will create three files:
 First recall that the probablity distribution is p(x) = exp(T*x).
 
 **T in [0.01, 0.1, 1, 10, 100]**
+
 On temperature_criteria_comparison_t\=0.01_0.1_1.0_10.0_100.0_n_tests\=100.0.png we can observe that: 
   - as expected the lower temperature T=0.01 outperforms the rest, followed by T=0.1. The other three seem to have quite similar performances;
 
@@ -135,6 +139,7 @@ On temperature_coverage_tournesolscore_t=0.01_0.1_1.0_10.0_100.0n_tests=100.0.pn
 Those quite high frequencies led me to investigate the temperatures between 0.01 and 0.1.
 
 **T in [1/20, 1/40, 1/60, 1/80]**
+
 On temperature_criteria_comparison_t=20.0_40.0_60.0_80.0_n_tests=100.0.png we can observe that: 
   - the performances are approximately sorted according to the temperature;
   - on some criterias the temperatures below 1/20 have a signficantly lower dispersion despite having better scores;
