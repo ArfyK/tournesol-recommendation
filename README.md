@@ -60,14 +60,14 @@ For comparison `deterministic_greedy` obtains an objective value of about 709 on
 
 **q = 0.75 and sample size in [40, 65, 90, 115, 140]**
 
-On sample_size_criteria_comparison_q\=0.75_size\=40_65_90_115_140_n_tests\=500.png we observe that: 
+On `sample_size_criteria_comparison_q\=0.75_size\=40_65_90_115_140_n_tests\=500.png` we observe that: 
   - The objective value is increasing with the sample size. It remains above r_75 for all sizes;
   - all sample sizes have better performances than r_75 with respect to the following criterias: diversity_inclusion, importance, engaging, largely_recommended, pedagogy, better_habits, reliability;
   - the performances are approximately the same with respect to the following criterias: layman_friendly, entertaining_relaxing, backfiring_risk;
   - The performances are increasing with the sample size for each criteria except entertaining_relaxing where it's decreasing;
   - the number of channels featured in the bundle in decreasing with the sample size. r_75 features more channels.
 
-On sample_size_coverage_size\=40_65_90_115_140_q\=0.75n_tests\=500.png we observe that:
+On `sample_size_coverage_size\=40_65_90_115_140_q\=0.75n_tests\=500.png` we observe that:
   - r_75 uniformly covers the top 200 with a frequency of 1-2%;
   - the size 40 also uniformly covers the top 200 with a higher frequency near 5%;
   - the size should be less than 115 in order to satisfy the two criteria above;
@@ -76,23 +76,23 @@ According to those results a sample size of 90 could be a good trade-off between
 
 **q = 0.5 and sample size in [40, 65, 90, 115, 140]**
 
-On sample_size_criteria_comparison_q\=0.5_size\=40_65_90_115_140_n_tests\=500.png we observe that:
+On `sample_size_criteria_comparison_q\=0.5_size\=40_65_90_115_140_n_tests\=500.png` we observe that:
   - the performance is increasing with n for the objective value and every criteria except layman_friendly, backfiref_risk and entertaining_relaxing where it's roughly constant;
   - r_75 has lower performances on every criteria except on layman_friendly, backfiref_risk and entertaining_relaxing where the performances are similar;
   - in terms of number of channels r_75 is slightly better. 
 
-On sample_size_coverage_size\=40_65_90_115_140_q\=0.5n_tests\=500.png we can observe that every parameters meets the two criteria above.
+On `sample_size_coverage_size\=40_65_90_115_140_q\=0.5n_tests\=500.png` we can observe that every parameters meets the two criteria above.
 
 These results lead me to test higher values for n.
 
 **q = 0.5 and sample size in [150, 190, 230, 280, 320]**
 
-On sample_size_criteria_comparison_q\=0.5_size\=150_190_230_280_320_n_tests\=500.png we can observe that:
+On `sample_size_criteria_comparison_q\=0.5_size\=150_190_230_280_320_n_tests\=500.png` we can observe that:
   - the objective value is still increasing with n;
   - the performances are similar albeit increasing with n;
   - the comparison with r_75 is qualitatively the same as before.
 
-On sample_size_coverage_size\=150_190_230_280_320_q\=0.5n_tests\=500.png we can observe that:
+On `sample_size_coverage_size\=150_190_230_280_320_q\=0.5n_tests\=500.png` we can observe that:
   - n should be less than 300 to meet criteria 2) above;
   - the videos ranked between 100 and 200 are barely covered with n above 200.
 
@@ -125,13 +125,13 @@ First recall that the probablity distribution is p(x) = exp(T*x).
 
 **T in [0.01, 0.1, 1, 10, 100]**
 
-On temperature_criteria_comparison_t\=0.01_0.1_1.0_10.0_100.0_n_tests\=100.0.png we can observe that: 
+On `temperature_criteria_comparison_t\=0.01_0.1_1.0_10.0_100.0_n_tests\=100.0.png` we can observe that: 
   - as expected the lower temperature T=0.01 outperforms the rest, followed by T=0.1. The other three seem to have quite similar performances;
 
   - the two `random` algorithms have similar performances and seem to have slightly better performances than the `random_greedy` ones, expect for T=0.01.
   - the criterias 'diversity_inclusion', 'layman_friendly', 'backfiring_risks', 'entertaining_relaxing' and 'reliability' feature **negative maximums** which should not be possible given the normalization we used.
 
-On temperature_coverage_tournesolscore_t=0.01_0.1_1.0_10.0_100.0n_tests=100.0.png (the other coverage plot using the aggregated scores is similar) we can observe that: 
+On `temperature_coverage_tournesolscore_t=0.01_0.1_1.0_10.0_100.0n_tests=100.0.png` (the other coverage plot using the aggregated scores is similar) we can observe that: 
   - the two `random` algorithms seem to well cover the top 200 with frequencies between 1% and 4%;
   - the two `random` algorithms outperform the `random_greedy` ones except for T=0.01;
   - the higher temperature covers well the top 100 with frequencies between 2 and 10%. Some videos have significantly higher frequencies (hence the use of a log scale): 20% for a few videos, about 70% for one video and close to 100% for two videos (one of those two videos is also always chosen by T=0.1).
@@ -140,13 +140,13 @@ Those quite high frequencies led me to investigate the temperatures between 0.01
 
 **T in [1/20, 1/40, 1/60, 1/80]**
 
-On temperature_criteria_comparison_t=20.0_40.0_60.0_80.0_n_tests=100.0.png we can observe that: 
+On `temperature_criteria_comparison_t=20.0_40.0_60.0_80.0_n_tests=100.0.png` we can observe that: 
   - the performances are approximately sorted according to the temperature;
   - on some criterias the temperatures below 1/20 have a signficantly lower dispersion despite having better scores;
   - T=1/20 performs slightly better than the two `random` algorithms.
   - the criteria 'entertaining_relaxing' features **negative maximums** which should not be possible given the normalization we used.
 
-On temperature_coverage_tournesolscore_t=20.0_40.0_60.0_80.0n_tests=100.0.png (the other coverage plot using the aggregated scores is similar) we can observe that: 
+On `temperature_coverage_tournesolscore_t=20.0_40.0_60.0_80.0n_tests=100.0.png` (the other coverage plot using the aggregated scores is similar) we can observe that: 
   - only the top 100 is well covered by the `random_greedy` algorithms;
   - the three same videos as before are chosen too often;
   - T=1/60 and T=1/80 have a slightly more cover the top 200 than T=1/100;
