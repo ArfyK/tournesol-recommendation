@@ -96,12 +96,7 @@ def deterministic_greedy(data, n_vid=10, q=0.15, l=1 / 10, alpha=0.5):
         )
 
         # Update S2 and partial sums
-        try:
-            new = df_incomplete.loc[obj.idxmax(), "uid"]
-        except:
-            print(df_incomplete.shape[0])
-            print(n_incomplete)
-            print(i)
+        new = df_incomplete.loc[obj.idxmax(), "uid"]
         S2.append(new)
         partial_sum = (
             partial_sum
