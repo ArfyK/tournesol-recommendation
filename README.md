@@ -65,7 +65,7 @@ On `l_tuning.png` we can observe that:
 Those results led me to use l = 1/10*m for the tuning of the temperature.
 
 ## `temperature_tuning.py`
-This script performs tests several temperature parameters used in the `random_greedy` algorithm from `recommendation.py`. 
+This script tests several temperature parameters used in the `random_greedy` algorithm from `recommendation.py`. 
 The different `random_greedy` algorithms are also compared with two `random` algorithms:
   - the first uniformly samples videos having a tournesol score above the third quartile;
   - the second uniformly samples videos having an "aggregated" score above the third quartile.  

@@ -107,7 +107,9 @@ def deterministic_greedy(data, n_vid=10, q=0.15, l=1 / 10, alpha=0.5):
     return {"uids": S1 + S2, "obj": objective1 + objective2}
 
 
-def random_greedy(data, n_vid=10, q=0.15, l=1 / 10, alpha=0.5, T=1):
+def random_greedy(
+    data, n_vid=10, q=0.15, l=1 / 10, alpha=0.5, T=1, clipping_parameter=1
+):
     df = data.copy()  # copy the dataframe to avoid modifying the original
 
     # Normalizes the dataframe
@@ -131,18 +133,31 @@ def random_greedy(data, n_vid=10, q=0.15, l=1 / 10, alpha=0.5, T=1):
 
     for i in range(n_complete):
         # Compute the objective function
-        obj = df.loc[~df["uid"].isin(S1)].apply(
+        objective_function_scores = df.loc[~df["uid"].isin(S1)].apply(
             lambda x: F(partial_sums, x, l, alpha), axis="columns"
         )
+
+        objective_function_scores = (
+            objective_function_scores - objective_function_scores.mean()
+        )
+
         # Compute the probability distribution
-        p = obj.divide(obj.mean()).apply(
-            lambda x: np.exp(x / T)
-        )  # objective value are normalized
+        p = objective_function_scores.apply(
+            lambda x: np.exp(
+                np.clip(
+                    x / T,
+                    -clipping_parameter,
+                    clipping_parameter,
+                )
+            )
+        )
         norm = p.sum()
         p = p.apply(lambda x: x / norm)
 
         # sample a new element from p
-        new_idx = np.random.choice(a=obj.index, size=1, replace=False, p=p)[0]
+        new_idx = np.random.choice(
+            a=objective_function_scores.index, size=1, replace=False, p=p
+        )[0]
         new = df.loc[new_idx, "uid"]
 
         # Update S1 and partial sums
@@ -151,7 +166,7 @@ def random_greedy(data, n_vid=10, q=0.15, l=1 / 10, alpha=0.5, T=1):
             0
         ]  # hack to keep a series
 
-    objective1 = obj[new_idx]
+    objective1 = objective_function_scores[new_idx]
 
     # Selection of videos only using the tournesol score
     S2 = []  # indexes of the selected videos
@@ -165,19 +180,27 @@ def random_greedy(data, n_vid=10, q=0.15, l=1 / 10, alpha=0.5, T=1):
 
     for i in range(n_incomplete):
         # Compute the objective function
-        obj = df_incomplete.loc[~df_incomplete["uid"].isin(S2)].apply(
-            lambda x: R(partial_sum, x), axis="columns"
-        )
+        objective_function_scores = df_incomplete.loc[
+            ~df_incomplete["uid"].isin(S2)
+        ].apply(lambda x: R(partial_sum, x), axis="columns")
 
         # Compute the probability distribution
-        p = obj.divide(obj.mean()).apply(
-            lambda x: np.exp(x / T)
-        )  # objective value are normalized
+        p = objective_function_scores.apply(
+            lambda x: np.exp(
+                np.clip(
+                    x / T,
+                    -clipping_parameter,
+                    clipping_parameter,
+                )
+            )
+        )
         norm = p.sum()
         p = p.apply(lambda x: x / norm)
 
         # sample a new element from p
-        new_idx = np.random.choice(a=obj.index, size=1, replace=False, p=p)[0]
+        new_idx = np.random.choice(
+            a=objective_function_scores.index, size=1, replace=False, p=p
+        )[0]
         new = df_incomplete.loc[new_idx, "uid"]
 
         # Update S2 and partial sums
@@ -189,7 +212,7 @@ def random_greedy(data, n_vid=10, q=0.15, l=1 / 10, alpha=0.5, T=1):
             0
         ]  # hack to get a series
 
-    objective2 = obj[new_idx]
+    objective2 = objective_function_scores[new_idx]
 
     return {"uids": S1 + S2, "obj": objective1 + objective2}
 
@@ -277,13 +300,13 @@ if __name__ == "__main__":
 
     #### TESTS ####
     if len(sys.argv) < 3:  # no results file provided
-        n_tests = 100
+        n_tests = 1
 
-        size = 1000
+        size = 100
 
         alpha = 0.5  # exponent of the power function used in the objective function
 
-        T = 80 # temperature used in random_greedy
+        T = 80  # temperature used in random_greedy
 
         n_vid = 10
 
