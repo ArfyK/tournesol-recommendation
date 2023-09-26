@@ -11,13 +11,13 @@ df = pd.read_csv(sys.argv[1])
 
 #### TESTS ####
 if len(sys.argv) < 3:  # no results file provided
-    n_tests = 1
+    n_tests = 100
 
     alpha = 0.5  # exponent of the power function used in the objective function
 
     n_vid = 12
 
-    temperature_list = [0.01, 0.1, 1, 10, 100]
+    temperature_list = [0.001, 0.0005, 0.0001, 0.00005, 0.00001]
 
     relative_upper_bound_list = [10, 130, 250, 370, 500]
 
