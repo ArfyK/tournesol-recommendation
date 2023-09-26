@@ -135,60 +135,70 @@ X = ["objective_value"] + CRITERIA
 # Comparison between objective values and the maximum of each criteria
 
 # 1 plot per temperature value for visibility
-f, axs = plt.subplots(3, 4, figsize=(13, 7), sharey=True)
+for t in temperature_list:
+    f, axs = plt.subplots(3, 4, figsize=(13, 7), sharey=True)
+    results_temperature_t = results.loc[results["temperature"].isin([t, None])]
+    for i in range(len(X)):
+        sns.boxplot(
+            data=results_temperature_t,
+            x=X[i],
+            y="algorithm",
+            ax=axs[i % 3, i % 4],
+            orient="h",
+        )
+        sns.stripplot(
+            data=results_temperature_t,
+            x=X[i],
+            y="relative_upper_bound",
+            ax=axs[i % 3, i % 4],
+        )
 
-for i in range(len(X)):
-    sns.boxplot(data=results, x=X[i], y="algorithm", ax=axs[i % 3, i % 4], orient="h")
-    sns.stripplot(
-        data=results,
-        x=X[i],
-        y="algorithm",
-        ax=axs[i % 3, i % 4],
+        axs[i % 3, i % 4].xaxis.grid(True)
+        axs[i % 3, i % 4].set_ylabel("")
+
+    # Number of different channel featured in the selection:
+    def unique_channel(
+        df, uids
+    ):  # used to count how many channel are featured in each selection
+        return df.loc[df["uid"].isin(uids), "uploader"].unique().shape[0]
+
+    results_temperature_t.insert(
+        0,
+        "n_channel",
+        results_temperature_t["uids"].apply(lambda x: unique_channel(df, x)),
     )
 
-    axs[i % 3, i % 4].xaxis.grid(True)
-    axs[i % 3, i % 4].set_ylabel("")
+    sns.boxplot(
+        data=results_temperature_t,
+        x="n_channel",
+        y="relative_upper_bound",
+        orient="h",
+        ax=axs[2, 3],
+    )
+    sns.stripplot(
+        data=results_temperature_t,
+        x="n_channel",
+        y="relative_upper_bound",
+        ax=axs[2, 3],
+    )
 
+    axs[2, 3].xaxis.grid(True)
+    axs[2, 3].set_ylabel("")
 
-# Number of different channel featured in the selection:
-def unique_channel(
-    df, uids
-):  # used to count how many channel are featured in each selection
-    return df.loc[df["uid"].isin(uids), "uploader"].unique().shape[0]
+    f.suptitle("Selection frequencies of random greedy")
+    plt.subplots_adjust(
+        left=0.12, bottom=0.074, right=0.998, top=0.976, wspace=0.062, hspace=0.264
+    )
 
-
-results["n_channel"] = results["uids"].apply(lambda x: unique_channel(df, x))
-
-sns.boxplot(
-    data=results,
-    x="n_channel",
-    y="algorithm",
-    orient="h",
-    ax=axs[2, 3],
-)
-sns.stripplot(
-    data=results,
-    x="n_channel",
-    y="algorithm",
-    ax=axs[2, 3],
-)
-
-axs[2, 3].xaxis.grid(True)
-axs[2, 3].set_ylabel("")
-
-plt.subplots_adjust(
-    left=0.12, bottom=0.074, right=0.998, top=0.976, wspace=0.062, hspace=0.264
-)
-
-plt.savefig(
-    fname="temperature_criteria_comparison_t="
-    + str(temperature_list)[1:-1].replace(", ", "_")
-    + "_c="
-    + str(relative_upper_bound_list)[1:-1].replace(", ", "_")
-    + "_n_tests="
-    + str(n_tests)
-    + ".png"
-)
+    plt.savefig(
+        fname="temperature_criteria_comparison_t="
+        + str(t)
+        + "_c="
+        + str(relative_upper_bound_list)[1:-1].replace(", ", "_")
+        + "_n_tests="
+        + str(n_tests)
+        + ".png"
+    )
 
 # Selection frequencies
 results = results.dropna()  # removes the results from the uniformly random algorithm
@@ -293,6 +303,12 @@ for i in range(len(temperature_list)):
             ax=axs[i, j],
         )
         axs[i, j].xaxis.set_label_text("")
+        axs[i, j].set_title(
+            "T = "
+            + str(temperature_list[i])
+            + " C = "
+            + str(relative_upper_bound_list[j])
+        )
 
 f.suptitle("Distribution of number of videos from the top 5%")
 plt.subplots_adjust(
