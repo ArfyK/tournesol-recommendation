@@ -134,10 +134,22 @@ X = ["objective_value"] + CRITERIA
 
 # Comparison between objective values and the maximum of each criteria
 
+
+# Number of different channel featured in the selection:
+def unique_channel(
+    df, uids
+):  # used to count how many channel are featured in each selection
+    return df.loc[df["uid"].isin(uids), "uploader"].unique().shape[0]
+
+
 # 1 plot per temperature value for visibility
 for t in temperature_list:
     f, axs = plt.subplots(3, 4, figsize=(13, 7), sharey=True)
-    results_temperature_t = results.loc[results["temperature"].isin([t, None])]
+    results_temperature_t = results.loc[
+        (results["temperature"] == t) | (results["temperature"].isna())
+    ]
+
+    # Plot the distributions of the objective value and the maximum of each criteria
     for i in range(len(X)):
         sns.boxplot(
             data=results_temperature_t,
@@ -149,19 +161,17 @@ for t in temperature_list:
         sns.stripplot(
             data=results_temperature_t,
             x=X[i],
-            y="relative_upper_bound",
+            y="algorithm",
             ax=axs[i % 3, i % 4],
         )
 
-        axs[i % 3, i % 4].xaxis.grid(True)
         axs[i % 3, i % 4].set_ylabel("")
+        if i == 4:
+            axs[i % 3, i % 4].yaxis.set_label_text("relative upper bound")
 
-    # Number of different channel featured in the selection:
-    def unique_channel(
-        df, uids
-    ):  # used to count how many channel are featured in each selection
-        return df.loc[df["uid"].isin(uids), "uploader"].unique().shape[0]
+        axs[i % 3, i % 4].xaxis.grid(True)
 
+    # Plot the number of different channel in each bundle
     results_temperature_t.insert(
         0,
         "n_channel",
@@ -171,23 +181,26 @@ for t in temperature_list:
     sns.boxplot(
         data=results_temperature_t,
         x="n_channel",
-        y="relative_upper_bound",
+        y="algorithm",
         orient="h",
         ax=axs[2, 3],
     )
     sns.stripplot(
         data=results_temperature_t,
         x="n_channel",
-        y="relative_upper_bound",
+        y="algorithm",
         ax=axs[2, 3],
     )
 
     axs[2, 3].xaxis.grid(True)
     axs[2, 3].set_ylabel("")
 
-    f.suptitle("Selection frequencies of random greedy")
+    f.suptitle(
+        "Objective value, Maximum of each criteria and number of channel per bundle for T ="
+        + str(t)
+    )
     plt.subplots_adjust(
-        left=0.12, bottom=0.074, right=0.998, top=0.976, wspace=0.062, hspace=0.264
+        left=0.043, bottom=0.074, right=0.995, top=0.94, wspace=0.062, hspace=0.264
     )
 
     plt.savefig(
@@ -268,10 +281,8 @@ for i in range(len(temperature_list)):
             axs[i, j].xaxis.set_label_text("rank")
         else:
             axs[i, j].xaxis.set_label_text("")
-        axs[i, j].set_xticks(
-            [1, 250, 500, 750, 1000, 1250, 1500, 1750, 2000], minor=True
-        )
-        axs[i, j].set_xticks([1000, 2000])
+        axs[i, j].set_xticks([], minor=True)
+        axs[i, j].set_xticks(list(range(0, 2000, 250)))
 f.suptitle("Selection frequencies of random greedy")
 plt.subplots_adjust(
     left=0.04, bottom=0.043, right=0.998, top=0.907, wspace=0.055, hspace=0.34
@@ -287,13 +298,17 @@ plt.savefig(
     + ".png"
 )
 
-# Distribution of the number of videos from the top 5% in the bundle
+# Distributions of the number of videos from the top 5% in the bundle
 top_5_percent = df.loc[df["tournesol_score"] >= df["tournesol_score"].quantile(0.95)]
 
 results["top_5%"] = results["uids"].apply(lambda x: np.isin(x, top_5_percent).sum())
 
 f, axs = plt.subplots(
-    len(temperature_list), len(relative_upper_bound_list), figsize=(13, 7), sharey=True
+    len(temperature_list),
+    len(relative_upper_bound_list),
+    figsize=(13, 7),
+    sharex=True,
+    sharey=True,
 )
 for i in range(len(temperature_list)):
     for j in range(len(relative_upper_bound_list)):
@@ -312,12 +327,56 @@ for i in range(len(temperature_list)):
 
 f.suptitle("Distribution of number of videos from the top 5%")
 plt.subplots_adjust(
-    left=0.04, bottom=0.043, right=0.998, top=0.907, wspace=0.055, hspace=0.34
+    left=0.02, bottom=0.043, right=0.983, top=0.907, wspace=0.055, hspace=0.605
 )
 
-plt.show()
 plt.savefig(
     fname="video_from_top_5_distribution"
+    + "_t="
+    + str(temperature_list)[1:-1].replace(", ", "_")
+    + "_c="
+    + str(relative_upper_bound_list)[1:-1].replace(", ", "_")
+    + "n_tests="
+    + str(n_tests)
+    + ".png"
+)
+
+# Distributions of the number of videos from the bottom 50% in the bundle
+bottom_50_percent = df.loc[df["tournesol_score"] <= df["tournesol_score"].quantile(0.5)]
+
+results["bottom_50%"] = results["uids"].apply(
+    lambda x: np.isin(x, bottom_50_percent).sum()
+)
+
+f, axs = plt.subplots(
+    len(temperature_list),
+    len(relative_upper_bound_list),
+    figsize=(13, 7),
+    sharex=True,
+    sharey=True,
+)
+for i in range(len(temperature_list)):
+    for j in range(len(relative_upper_bound_list)):
+        sns.boxplot(
+            data=results.loc[results["algorithm"] == algo_list[i + j]],
+            x="bottom_50%",
+            ax=axs[i, j],
+        )
+        axs[i, j].xaxis.set_label_text("")
+        axs[i, j].set_title(
+            "T = "
+            + str(temperature_list[i])
+            + " C = "
+            + str(relative_upper_bound_list[j])
+        )
+
+f.suptitle("Distribution of number of videos from the bottom 50%")
+plt.subplots_adjust(
+    left=0.02, bottom=0.043, right=0.983, top=0.907, wspace=0.055, hspace=0.605
+)
+
+plt.savefig(
+    fname="video_from_bottom_50_distribution"
     + "_t="
     + str(temperature_list)[1:-1].replace(", ", "_")
     + "_c="
