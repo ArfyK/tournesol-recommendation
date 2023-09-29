@@ -207,7 +207,7 @@ for t in temperature_list:
         fname="temperature_criteria_comparison_t="
         + str(t)
         + "_c="
-        + str(relative_upper_bound_list)[1:-1].replace(", ", "_")
+        + str(relative_upper_bound_list)[1:-1].replace(" ", "_")
         + "_n_tests="
         + str(n_tests)
         + ".png"
@@ -245,9 +245,9 @@ selection_frequencies[algo_list] = selection_frequencies[algo_list] / n_tests
 selection_frequencies.to_csv(
     "selection_frequencies"
     + "_t="
-    + str(temperature_list)[1:-1].replace(", ", "_")
+    + str(temperature_list)[1:-1].replace(" ", "_")
     + "_c="
-    + str(relative_upper_bound_list)[1:-1].replace(", ", "_")
+    + str(relative_upper_bound_list)[1:-1].replace(" ", "_")
     + "n_tests="
     + str(n_tests)
     + ".csv"
@@ -290,9 +290,9 @@ plt.subplots_adjust(
 
 plt.savefig(
     fname="temperature_selection_frequencies_t="
-    + str(temperature_list)[1:-1].replace(", ", "_")
+    + str(temperature_list)[1:-1].replace(" ", "_")
     + "_c="
-    + str(relative_upper_bound_list)[1:-1].replace(", ", "_")
+    + str(relative_upper_bound_list)[1:-1].replace(" ", "_")
     + "n_tests="
     + str(n_tests)
     + ".png"
@@ -333,9 +333,9 @@ plt.subplots_adjust(
 plt.savefig(
     fname="video_from_top_5_distribution"
     + "_t="
-    + str(temperature_list)[1:-1].replace(", ", "_")
+    + str(temperature_list)[1:-1].replace(" ", "_")
     + "_c="
-    + str(relative_upper_bound_list)[1:-1].replace(", ", "_")
+    + str(relative_upper_bound_list)[1:-1].replace(" ", "_")
     + "n_tests="
     + str(n_tests)
     + ".png"
@@ -378,9 +378,9 @@ plt.subplots_adjust(
 plt.savefig(
     fname="video_from_bottom_50_distribution"
     + "_t="
-    + str(temperature_list)[1:-1].replace(", ", "_")
+    + str(temperature_list)[1:-1].replace(" ", "_")
     + "_c="
-    + str(relative_upper_bound_list)[1:-1].replace(", ", "_")
+    + str(relative_upper_bound_list)[1:-1].replace(" ", "_")
     + "n_tests="
     + str(n_tests)
     + ".png"
