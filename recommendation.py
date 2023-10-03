@@ -137,15 +137,12 @@ def random_greedy(
             lambda x: F(partial_sums, x, l, alpha), axis="columns"
         )
 
-        objective_function_scores = (
-            objective_function_scores - objective_function_scores.mean()
-        )
-
         # Compute the probability distribution
+        objective_function_scores_mean = objective_function_scores.mean()
         p = objective_function_scores.apply(
             lambda x: np.exp(
                 np.clip(
-                    x / T,
+                    (x - mean) / T,
                     -clipping_parameter,
                     clipping_parameter,
                 )
