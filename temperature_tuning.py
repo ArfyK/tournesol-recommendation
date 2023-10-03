@@ -299,38 +299,41 @@ plt.savefig(
 )
 
 # Distributions of the number of videos from the top 5% in the bundle
-top_5_percent = df.loc[df["tournesol_score"] >= df["tournesol_score"].quantile(0.95)]
+quantile_95 = df["tournesol_score"].quantile(0.95)
 
-results["top_5%"] = results["uids"].apply(lambda x: np.isin(x, top_5_percent).sum())
 
-f, axs = plt.subplots(
-    len(temperature_list),
-    len(relative_upper_bound_list),
-    figsize=(13, 7),
-    sharex=True,
-    sharey=True,
-)
-for i in range(len(temperature_list)):
-    for j in range(len(relative_upper_bound_list)):
-        sns.boxplot(
-            data=results.loc[results["algorithm"] == algo_list[i + j]],
-            x="top_5%",
-            ax=axs[i, j],
-        )
-        axs[i, j].xaxis.set_label_text("")
-        axs[i, j].set_title(
-            "T = "
-            + str(temperature_list[i])
-            + " C = "
-            + str(relative_upper_bound_list[j])
-        )
+def count_videos_within_threshold(uids_list, dataFrame, quantile, above=True):
+    if above:
+        # returns how many videos from the uids_list have a tournesol_score above the quantile
+        return dataFrame.loc[
+            (dataFrame["uid"].isin(uids_list))
+            & (dataFrame["tournesol_score"] >= quantile)
+        ].shape[0]
+    else:
+        # returns how many videos from the uids_list have a tournesol_score below the quantile
+        return dataFrame.loc[
+            (dataFrame["uid"].isin(uids_list))
+            & (dataFrame["tournesol_score"] <= quantile)
+        ].shape[0]
 
-f.suptitle("Distribution of number of videos from the top 5%")
-plt.subplots_adjust(
-    left=0.02, bottom=0.043, right=0.983, top=0.907, wspace=0.055, hspace=0.605
+
+results["top_5%"] = results["uids"].apply(
+    lambda x: count_videos_within_threshold(x, df, quantile_95, above=True)
 )
 
-plt.savefig(
+g = sns.FaceGrid(
+    results[["top_5%", "temperature", "relative_upper_bound"]],
+    row="relative_upper_bound",
+    col="temperature",
+)
+g.map_dataframe(sns.boxplot, x="top_5%")
+
+g.fig.suptitle("Distribution of number of videos from the top 5%")
+g.fig.subplots_adjust(
+    left=0.013, bottom=0.038, right=0.99, top=0.905, wspace=0.072, hspace=0.536
+)
+
+g.savefig(
     fname="video_from_top_5_distribution"
     + "_t="
     + str(temperature_list)[1:-1].replace(" ", "_")
@@ -342,40 +345,25 @@ plt.savefig(
 )
 
 # Distributions of the number of videos from the bottom 50% in the bundle
-bottom_50_percent = df.loc[df["tournesol_score"] <= df["tournesol_score"].quantile(0.5)]
+quantile_50 = df["tournesol_score"].quantile(0.5)
 
 results["bottom_50%"] = results["uids"].apply(
-    lambda x: np.isin(x, bottom_50_percent).sum()
+    lambda x: count_videos_within_threshold(x, df, quantile_50, above=False)
 )
 
-f, axs = plt.subplots(
-    len(temperature_list),
-    len(relative_upper_bound_list),
-    figsize=(13, 7),
-    sharex=True,
-    sharey=True,
+g = sns.FaceGrid(
+    results[["bottom_50%", "temperature", "relative_upper_bound"]],
+    row="relative_upper_bound",
+    col="temperature",
 )
-for i in range(len(temperature_list)):
-    for j in range(len(relative_upper_bound_list)):
-        sns.boxplot(
-            data=results.loc[results["algorithm"] == algo_list[i + j]],
-            x="bottom_50%",
-            ax=axs[i, j],
-        )
-        axs[i, j].xaxis.set_label_text("")
-        axs[i, j].set_title(
-            "T = "
-            + str(temperature_list[i])
-            + " C = "
-            + str(relative_upper_bound_list[j])
-        )
+g.map_dataframe(sns.boxplot, x="bottom_50%")
 
-f.suptitle("Distribution of number of videos from the bottom 50%")
-plt.subplots_adjust(
-    left=0.02, bottom=0.043, right=0.983, top=0.907, wspace=0.055, hspace=0.605
+g.fig.suptitle("Distribution of number of videos from the bottom 50%")
+g.fig.subplots_adjust(
+    left=0.013, bottom=0.038, right=0.99, top=0.905, wspace=0.072, hspace=0.536
 )
 
-plt.savefig(
+g.savefig(
     fname="video_from_bottom_50_distribution"
     + "_t="
     + str(temperature_list)[1:-1].replace(" ", "_")
