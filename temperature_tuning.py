@@ -263,7 +263,7 @@ f, axs = plt.subplots(
 for i in range(len(temperature_list)):
     for j in range(len(relative_upper_bound_list)):
         sns.barplot(
-            data=selection_frequencies, x="rank", y=algo_list[i + j], ax=axs[i, j]
+            data=selection_frequencies, x="rank", y=algo_list[i*len(temperature_list) + j], ax=axs[i, j]
         )
         axs[i, j].set_title(
             "T = "
@@ -282,7 +282,7 @@ for i in range(len(temperature_list)):
         else:
             axs[i, j].xaxis.set_label_text("")
         axs[i, j].set_xticks([], minor=True)
-        axs[i, j].set_xticks(list(range(0, 2000, 250)))
+        axs[i, j].set_xticks(list(range(0, 2000, 500)))
 f.suptitle("Selection frequencies of random greedy")
 plt.subplots_adjust(
     left=0.04, bottom=0.043, right=0.998, top=0.907, wspace=0.055, hspace=0.34
@@ -321,13 +321,13 @@ results["top_5%"] = results["uids"].apply(
     lambda x: count_videos_within_threshold(x, df, quantile_95, above=True)
 )
 
-g = sns.FaceGrid(
+g = sns.FacetGrid(
     results[["top_5%", "temperature", "relative_upper_bound"]],
     row="relative_upper_bound",
     col="temperature",
 )
 g.map_dataframe(sns.boxplot, x="top_5%")
-
+g.set_titles(col_template="T = {col_name}", row_template="c = {row_name}")
 g.fig.suptitle("Distribution of number of videos from the top 5%")
 g.fig.subplots_adjust(
     left=0.013, bottom=0.038, right=0.99, top=0.905, wspace=0.072, hspace=0.536
@@ -351,13 +351,13 @@ results["bottom_50%"] = results["uids"].apply(
     lambda x: count_videos_within_threshold(x, df, quantile_50, above=False)
 )
 
-g = sns.FaceGrid(
+g = sns.FacetGrid(
     results[["bottom_50%", "temperature", "relative_upper_bound"]],
     row="relative_upper_bound",
     col="temperature",
 )
 g.map_dataframe(sns.boxplot, x="bottom_50%")
-
+g.set_titles(col_template="T = {col_name}", row_template="c = {row_name}")
 g.fig.suptitle("Distribution of number of videos from the bottom 50%")
 g.fig.subplots_adjust(
     left=0.013, bottom=0.038, right=0.99, top=0.905, wspace=0.072, hspace=0.536
