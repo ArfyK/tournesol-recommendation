@@ -263,7 +263,10 @@ f, axs = plt.subplots(
 for i in range(len(temperature_list)):
     for j in range(len(relative_upper_bound_list)):
         sns.barplot(
-            data=selection_frequencies, x="rank", y=algo_list[i*len(temperature_list) + j], ax=axs[i, j]
+            data=selection_frequencies,
+            x="rank",
+            y=algo_list[i * len(temperature_list) + j],
+            ax=axs[i, j],
         )
         axs[i, j].set_title(
             "T = "
