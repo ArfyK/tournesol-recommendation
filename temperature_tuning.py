@@ -17,9 +17,9 @@ if len(sys.argv) < 3:  # no results file provided
 
     n_vid = 12
 
-    temperature_list = [0.001, 0.0005, 0.0001, 0.00005, 0.00001]
+    temperature_list = [0.001, 0.01, 0.1, 1, 10]
 
-    relative_upper_bound_list = [10, 130, 250, 370, 500]
+    relative_upper_bound_list = [1000, 3250, 5500, 7750, 10000]
 
     results = []
 
@@ -376,3 +376,29 @@ g.savefig(
     + str(n_tests)
     + ".png"
 )
+
+for t in temperature_list:
+    for c in relative_upper_bound_list:
+        print(" T = " + str(t) + ", c = " + str(c) + ": ")
+        print("Total number of videos from top 5% : ")
+        print(
+            str(
+                results.loc[
+                    (results["temperature"] == t)
+                    & (results["relative_upper_bound"] == c),
+                    ["top_5%"],
+                ].sum()
+            )
+        )
+
+        print("Total number of videos from bottom 50% : ")
+        print(
+            str(
+                results.loc[
+                    (results["temperature"] == t)
+                    & (results["relative_upper_bound"] == c),
+                    ["bottom_50%"],
+                ].sum()
+            )
+        )
+        print("\n\n")
