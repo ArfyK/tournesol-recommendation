@@ -107,9 +107,7 @@ def deterministic_greedy(data, n_vid=10, q=0.15, l=1 / 10, alpha=0.5):
     return {"uids": S1 + S2, "obj": objective1 + objective2}
 
 
-def random_greedy(
-    data, n_vid=10, l=1 / 10, alpha=0.5, T=1, clipping_parameter=1
-):
+def random_greedy(data, n_vid=10, l=1 / 10, alpha=0.5, T=1, clipping_parameter=1):
     df = data.copy()  # copy the dataframe to avoid modifying the original
 
     # Normalizes the dataframe
