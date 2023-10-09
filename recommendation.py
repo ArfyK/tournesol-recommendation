@@ -108,7 +108,7 @@ def deterministic_greedy(data, n_vid=10, q=0.15, l=1 / 10, alpha=0.5):
 
 
 def random_greedy(
-    data, n_vid=10, q=0.15, l=1 / 10, alpha=0.5, T=1, clipping_parameter=1
+    data, n_vid=10, l=1 / 10, alpha=0.5, T=1, clipping_parameter=1
 ):
     df = data.copy()  # copy the dataframe to avoid modifying the original
 
@@ -118,22 +118,13 @@ def random_greedy(
     df[CRITERIA] = df[CRITERIA] - df[CRITERIA].min()
     df = df.fillna(0)
 
-    # Determine how many videos with and without na will be selected
-    n_incomplete = int(q * n_vid)
-    incomplete_available = contains_na.sum()
-
-    if incomplete_available < n_incomplete:
-        n_incomplete = incomplete_available
-
-    n_complete = n_vid - n_incomplete
-
     # Selection of videos scored according to all criteria
-    S1 = []  # uids of the selected videos
+    S = []  # uids of the selected videos
     partial_sums = pd.Series(data=[0] * len(CRITERIA), index=CRITERIA)
 
-    for i in range(n_complete):
+    for i in range(n_vid):
         # Compute the objective function
-        objective_function_scores = df.loc[~df["uid"].isin(S1)].apply(
+        objective_function_scores = df.loc[~df["uid"].isin(S)].apply(
             lambda x: F(partial_sums, x, l, alpha), axis="columns"
         )
 
@@ -142,7 +133,7 @@ def random_greedy(
         p = objective_function_scores.apply(
             lambda x: np.exp(
                 np.clip(
-                    (x - mean) / T,
+                    (x - objective_function_scores_mean) / T,
                     -clipping_parameter,
                     clipping_parameter,
                 )
@@ -157,61 +148,15 @@ def random_greedy(
         )[0]
         new = df.loc[new_idx, "uid"]
 
-        # Update S1 and partial sums
-        S1.append(new)
+        # Update S and partial sums
+        S.append(new)
         partial_sums = (partial_sums + df.loc[df["uid"] == new, CRITERIA]).iloc[
             0
         ]  # hack to keep a series
 
-    objective1 = objective_function_scores[new_idx]
+    objective = objective_function_scores[new_idx]
 
-    # Selection of videos only using the tournesol score
-    S2 = []  # indexes of the selected videos
-    partial_sum = 0
-    df_incomplete = df.loc[
-        contains_na, ["uid", "largely_recommended"]
-    ]  # Remove videos with no missing score
-    df_incomplete = df_incomplete[
-        ~df_incomplete["uid"].isin(S1)
-    ]  # Remove videos that were already selected
-
-    for i in range(n_incomplete):
-        # Compute the objective function
-        objective_function_scores = df_incomplete.loc[
-            ~df_incomplete["uid"].isin(S2)
-        ].apply(lambda x: R(partial_sum, x), axis="columns")
-
-        # Compute the probability distribution
-        p = objective_function_scores.apply(
-            lambda x: np.exp(
-                np.clip(
-                    x / T,
-                    -clipping_parameter,
-                    clipping_parameter,
-                )
-            )
-        )
-        norm = p.sum()
-        p = p.apply(lambda x: x / norm)
-
-        # sample a new element from p
-        new_idx = np.random.choice(
-            a=objective_function_scores.index, size=1, replace=False, p=p
-        )[0]
-        new = df_incomplete.loc[new_idx, "uid"]
-
-        # Update S2 and partial sums
-        S2.append(new)
-        partial_sum = (
-            partial_sum
-            + df_incomplete.loc[df_incomplete["uid"] == new, "largely_recommended"]
-        ).iloc[
-            0
-        ]  # hack to get a series
-
-    objective2 = objective_function_scores[new_idx]
-
-    return {"uids": S1 + S2, "obj": objective1 + objective2}
+    return {"uids": S, "obj": objective}
 
 
 ### Random sampling
