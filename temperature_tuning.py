@@ -332,6 +332,22 @@ g = sns.FacetGrid(
 g.map_dataframe(sns.boxplot, x="top_5%")
 g.set_titles(col_template="T = {col_name}", row_template="c = {row_name}")
 g.fig.suptitle("Distribution of number of videos from the top 5%")
+
+# Display the total number of videos from top 5% for each algorithm in the subplot title
+for i_c in range(len(relative_upper_bound_list)):
+    for i_t in range(len(temperature_list)):
+        g.axes[i_c][i_t].set_title(
+            g.axes[i_c][i_t].get_title()
+            + " | Total: "
+            + str(
+                int(results.loc[
+                    (results["relative_upper_bound"] == relative_upper_bound_list[i_c])
+                    & (results["temperature"] == temperature_list[i_t]),
+                    "top_5%",
+                ].sum())
+            )
+        )
+
 g.fig.subplots_adjust(
     left=0.013, bottom=0.038, right=0.99, top=0.905, wspace=0.072, hspace=0.536
 )
@@ -362,6 +378,23 @@ g = sns.FacetGrid(
 g.map_dataframe(sns.boxplot, x="bottom_50%")
 g.set_titles(col_template="T = {col_name}", row_template="c = {row_name}")
 g.fig.suptitle("Distribution of number of videos from the bottom 50%")
+
+# Display the total number of videos from bottom 50% for each algorithm in the subplot title
+for i_c in range(len(relative_upper_bound_list)):
+    for i_t in range(len(temperature_list)):
+        g.axes[i_c][i_t].set_title(
+            g.axes[i_c][i_t].get_title()
+            + " | Total: "
+            + str(
+                int(results.loc[
+                    (results["relative_upper_bound"] == relative_upper_bound_list[i_c])
+                    & (results["temperature"] == temperature_list[i_t]),
+                    "bottom_50%",
+                ].sum())
+            )
+        )
+
+
 g.fig.subplots_adjust(
     left=0.013, bottom=0.038, right=0.99, top=0.905, wspace=0.072, hspace=0.536
 )
@@ -377,28 +410,4 @@ g.savefig(
     + ".png"
 )
 
-for t in temperature_list:
-    for c in relative_upper_bound_list:
-        print(" T = " + str(t) + ", c = " + str(c) + ": ")
-        print("Total number of videos from top 5% : ")
-        print(
-            str(
-                results.loc[
-                    (results["temperature"] == t)
-                    & (results["relative_upper_bound"] == c),
-                    ["top_5%"],
-                ].sum()
-            )
-        )
 
-        print("Total number of videos from bottom 50% : ")
-        print(
-            str(
-                results.loc[
-                    (results["temperature"] == t)
-                    & (results["relative_upper_bound"] == c),
-                    ["bottom_50%"],
-                ].sum()
-            )
-        )
-        print("\n\n")
