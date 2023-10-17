@@ -22,7 +22,7 @@ CRITERIA = [
 
 def get_age_in_days(video_series, ref_date):
     # return 1 if the video is less than a day old
-    return max(
+    return min(
         (
             ref_date
             - datetime.datetime.strptime(
@@ -37,7 +37,7 @@ def get_age_in_days(video_series, ref_date):
 
 
 # Complete Objective function
-def F(partial_sums, new, ref_date, l=1 / 10, alpha=0.5, mu=0.1):
+def F(partial_sums, new, ref_date, l=1 / 10, alpha=0.5, mu=0.1, t_0=0):
     # Relevance term
     R = partial_sums["largely_recommended"] + new["largely_recommended"]
     # Diversity term
@@ -49,25 +49,29 @@ def F(partial_sums, new, ref_date, l=1 / 10, alpha=0.5, mu=0.1):
 
     # Recency term
     D = (
-        partial_sums["age_in_days_inverses"] + 1 / get_age_in_days(new, ref_date)
+        partial_sums["age_in_days_inverses"]
+        + 1 / (t_0 + get_age_in_days(new, ref_date))
     ) ** alpha
 
     return R + l * C + mu * D
 
 
 # Incomplete objective function
-def F_incomplete(partial_sums, new, ref_date, alpha=0.5, mu=0.1):
+def F_incomplete(partial_sums, new, ref_date, alpha=0.5, mu=0.1, t_0=0):
     # Relevance term
     R = partial_sums["largely_recommended"] + new["largely_recommended"]
     # Recency term
     D = (
-        partial_sums["age_in_days_inverses"] + 1 / get_age_in_days(new, ref_date)
+        partial_sums["age_in_days_inverses"]
+        + 1 / (t_0 + get_age_in_days(new, ref_date))
     ) ** alpha
 
     return R + mu * D
 
 
-def deterministic_greedy(data, ref_date, n_vid=10, q=0.15, l=1 / 10, alpha=0.5, mu=0.1):
+def deterministic_greedy(
+    data, ref_date, n_vid=10, q=0.15, l=1 / 10, alpha=0.5, mu=0.1, t_0=0
+):
     df = data.copy()  # copy the dataframe to avoid modifying the original
 
     # Normalizes the dataframe
@@ -92,7 +96,7 @@ def deterministic_greedy(data, ref_date, n_vid=10, q=0.15, l=1 / 10, alpha=0.5, 
     for i in range(n_complete):
         # Compute the objective function
         obj = df.loc[~df["uid"].isin(S1)].apply(
-            lambda x: F(partial_sums, x, ref_date, l, alpha, mu), axis="columns"
+            lambda x: F(partial_sums, x, ref_date, l, alpha, mu, t_0), axis="columns"
         )
 
         # Update S1 and partial sums
@@ -105,7 +109,7 @@ def deterministic_greedy(data, ref_date, n_vid=10, q=0.15, l=1 / 10, alpha=0.5, 
         ]  # hack to keep a series
         partial_sums["age_in_days_inverses"] = partial_sums[
             "age_in_days_inverses"
-        ] + 1 / get_age_in_days(df.loc[df["uid"] == new].iloc[0], ref_date)
+        ] + 1 / (t_0 + get_age_in_days(df.loc[df["uid"] == new].iloc[0], ref_date))
         objective1 = obj.max()
 
     # Selection of videos only using the tournesol score
@@ -124,7 +128,8 @@ def deterministic_greedy(data, ref_date, n_vid=10, q=0.15, l=1 / 10, alpha=0.5, 
     for i in range(n_incomplete):
         # Compute the objective function
         obj = df_incomplete.loc[~df_incomplete["uid"].isin(S2)].apply(
-            lambda x: F_incomplete(partial_sums, x, ref_date, alpha, mu), axis="columns"
+            lambda x: F_incomplete(partial_sums, x, ref_date, alpha, mu, t_0),
+            axis="columns",
         )
 
         # Update S2 and partial sums
@@ -138,7 +143,7 @@ def deterministic_greedy(data, ref_date, n_vid=10, q=0.15, l=1 / 10, alpha=0.5, 
         ]  # hack to get a series
         partial_sums["age_in_days_inverses"] = partial_sums[
             "age_in_days_inverses"
-        ] + 1 / get_age_in_days(df.loc[df["uid"] == new].iloc[0], ref_date)
+        ] + 1 / (t_0 + get_age_in_days(df.loc[df["uid"] == new].iloc[0], ref_date))
     objective2 = obj.max()
 
     return {"uids": S1 + S2, "obj": objective1 + objective2}
@@ -154,7 +159,9 @@ def aggregated_score(series, l, alpha):
     return series["largely_recommended"] + l * series[CRITERIA[1:]].sum()
 
 
-def random_greedy(data, n_vid=10, l=1 / 10, alpha=0.5, T=1, clipping_parameter=1):
+def random_greedy(
+    data, n_vid=10, l=1 / 10, alpha=0.5, T=1, clipping_parameter=1, mu=0.1, t_0=0
+):
     df = data.copy()  # copy the dataframe to avoid modifying the original
 
     # Normalizes the dataframe
@@ -165,12 +172,13 @@ def random_greedy(data, n_vid=10, l=1 / 10, alpha=0.5, T=1, clipping_parameter=1
 
     # Selection of videos scored according to all criteria
     S = []  # uids of the selected videos
-    partial_sums = pd.Series(data=[0] * len(CRITERIA), index=CRITERIA)
+    index = CRITERIA + ["age_in_days_inverses"]
+    partial_sums = pd.Series(data=[0] * len(index), index=index)
 
     for i in range(n_vid):
         # Compute the objective function
         objective_function_scores = df.loc[~df["uid"].isin(S)].apply(
-            lambda x: F(partial_sums, x, l, alpha), axis="columns"
+            lambda x: F(partial_sums, x, l, alpha, mu, t_0), axis="columns"
         )
 
         # Compute the probability distribution
@@ -198,6 +206,9 @@ def random_greedy(data, n_vid=10, l=1 / 10, alpha=0.5, T=1, clipping_parameter=1
         partial_sums = (partial_sums + df.loc[df["uid"] == new, CRITERIA]).iloc[
             0
         ]  # hack to keep a series
+        partial_sums["age_in_days_inverses"] = partial_sums[
+            "age_in_days_inverses"
+        ] + 1 / (t_0 + get_age_in_days(df.loc[df["uid"] == new].iloc[0], ref_date))
 
     objective = objective_function_scores[new_idx]
 
@@ -240,6 +251,7 @@ def random(
     alpha=0.5,
     l=1 / 10,
     mu=0.1,
+    t_0=0,
     pre_selection=False,
     quantile=0,
     key=rank_by_tournesol_score,
@@ -265,7 +277,7 @@ def random(
         + l * sums[CRITERIA[1:]].apply(lambda x: x**alpha).sum()
         + mu
         * selection.apply(
-            lambda x: 1 / get_age_in_days(x, ref_date), axis="columns"
+            lambda x: 1 / (t_0 + get_age_in_days(x, ref_date)), axis="columns"
         ).sum()
         ** alpha
     )
