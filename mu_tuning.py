@@ -12,7 +12,7 @@ from recommendation import (
     get_age_in_days,
 )
 
-ref_date = datetime.datetime(2023, 9, 25, 0, 0)
+ref_date = datetime.datetime(2023, 9, 19, 0, 0)  # one day older than the video database
 
 #### DATA SET UP ####
 dataFrame = pd.read_csv(sys.argv[1])
@@ -390,6 +390,64 @@ g.savefig(
     + str(mu_list)[1:-1].replace(" ", "_")
     + "_c="
     + str(t_0_list)[1:-1].replace(" ", "_")
+    + "n_tests="
+    + str(n_tests)
+    + ".png"
+)
+
+# Distributions of the number of videos from the top 20 of the month
+df["age_in_days"] = df.apply(lambda x: get_age_in_days(x, ref_date), axis="columns")
+top_20_of_last_month = (
+    df.loc[df["age_in_days"] <= 30]
+    .sort_values(by="tournesol_score", ascending=False)
+    .iloc[0:20]["uid"]
+)
+
+
+def count_videos_in_subset(uids_list, subset):
+    return subset.loc[(subset.isin(uids_list))].shape[0]
+
+
+results["top_20_of_last_month"] = results["uids"].apply(
+    lambda x: count_videos_in_subset(x, top_20_from_last_month)
+)
+
+g = sns.FacetGrid(
+    results[["top_20_of_last_month", "mu", "t_0"]],
+    row="mu",
+    col="t_0",
+)
+g.map_dataframe(sns.boxplot, x="top_20_of_last_month")
+g.set_titles(col_template="mu = {col_name}", row_template="t_0 = {row_name}")
+g.fig.suptitle("Distribution of number of videos from the top 20 of last month")
+
+# Display the total number of videos from top 20 of last month for each algorithm in the subplot title
+for i_t0 in range(len(t_0_list)):
+    for i_mu in range(len(mu_list)):
+        g.axes[i_t0][i_mu].set_title(
+            g.axes[i_t0][i_mu].get_title()
+            + " | Total: "
+            + str(
+                int(
+                    results.loc[
+                        (results["t_0_list"] == t_0_list[i_t0])
+                        & (results["mu_list"] == mu_list[i_mu]),
+                        "top_20_of_last_month",
+                    ].sum()
+                )
+            )
+        )
+
+g.fig.subplots_adjust(
+    left=0.013, bottom=0.038, right=0.99, top=0.905, wspace=0.072, hspace=0.536
+)
+
+g.savefig(
+    fname="video_from_top_20_distribution"
+    + "_mu="
+    + str(mu_list)[1:-1].replace(" ", "_")
+    + "_t_0="
+    + str(t_0)[1:-1].replace(" ", "_")
     + "n_tests="
     + str(n_tests)
     + ".png"
