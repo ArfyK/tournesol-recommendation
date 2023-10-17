@@ -6,13 +6,13 @@ import sys
 import datetime
 from recommendation import (
     CRITERIA,
-    deterministic_greedy,
+    random_greedy,
     random,
     rank_by_tournesol_score,
-    get_age_in_days
+    get_age_in_days,
 )
 
-ref_date = datetime.datetime(2023, 5, 10, 0, 0)
+ref_date = datetime.datetime(2023, 9, 25, 0, 0)
 
 #### DATA SET UP ####
 dataFrame = pd.read_csv(sys.argv[1])
@@ -21,51 +21,88 @@ dataFrame = pd.read_csv(sys.argv[1])
 if len(sys.argv) < 3:  # no results file provided
     n_tests = 1
 
-    sample_size = 90
-
     alpha = 0.5  # exponent of the power function used in the objective function
 
     n_vid = 12
 
-    q = 0.15
+    q = 0
 
     quantile = 0.75
 
+    temperature = 5.5
+
+    clipping_parameter = 1 / 2 * np.log(1000)
+
     mu_list = [0.5, 5, 50]
+
+    t_0_list = [0, 15]  # days
 
     results = []
 
     for k in range(n_tests):
         print("Test " + str(k + 1) + " out of " + str(n_tests))
 
-        df = dataFrame.loc[
-            np.random.choice(a=dataFrame.index, size=sample_size, replace=False)
-        ]
-        maxs = (df[CRITERIA] - df[CRITERIA].min()).max()
+        maxs = df[CRITERIA].max()
 
+        print("     Running Random Greedy: ")
         for mu in mu_list:
-            dg = deterministic_greedy(
-                df, ref_date, n_vid=n_vid, alpha=alpha, l=1 / 10, mu=mu
+            print("          Mu = " + str(t) + " from " + str(mu_list))
+            for t_0 in t_0_list:
+                print("               t_0 = " + str(t_0) + " from " + str(t_0_list))
+
+                rg = random_greedy(
+                    df,
+                    n_vid=n_vid,
+                    alpha=alpha,
+                    l=1 / 10,
+                    T=temperature,
+                    clipping_parameter=clipping_parameter,
+                    mu=mu,
+                    t_0=t_0,
+                )
+                maxs_rg = (
+                    df.loc[df["uid"].isin(rg["uids"]), CRITERIA]
+                    .max()
+                    .divide(maxs)
+                    .to_list()
+                )
+                results.append(
+                    [
+                        k + 1,
+                        "random_greedy mu="
+                        + str(t)
+                        + " t_0="
+                        + str(relative_upper_bound),
+                        mu,
+                        t_0,
+                        rg["uids"],
+                        rg["obj"],
+                    ]
+                    + maxs_rg
+                )  # We keep the relative upper bound instead of the clipping parameter for interpretability
+
+            print("     Running random")
+            r_75 = random(
+                df,
+                n_vid=n_vid,
+                alpha=alpha,
+                pre_selection=True,
+                quantile=0.75,
+                mu=mu,
+                t_0=t_0,
             )
-            maxs_dg = (
-                df.loc[df["uid"].isin(dg["uids"]), CRITERIA]
+            maxs_75 = (
+                df.loc[df["uid"].isin(r_75["uids"]), CRITERIA]
                 .max()
                 .divide(maxs)
                 .to_list()
             )
             results.append(
-                [k + 1, "dg_mu="+str(mu), mu, dg["uids"], dg["obj"]] + maxs_dg
-            )
-
-            r_75 = random(df, ref_date, n_vid=n_vid, alpha=alpha, mu=mu, pre_selection=True, quantile=0.75)
-            maxs_75 = (
-                df.loc[df["uid"].isin(r_75["uids"]), CRITERIA].max().divide(maxs).to_list()
-            )
-            results.append(
                 [
                     k + 1,
                     "r_75",
-                    mu,
+                    None,
+                    None,
                     r_75["uids"],
                     r_75["obj"],
                 ]
@@ -73,17 +110,24 @@ if len(sys.argv) < 3:  # no results file provided
             )
 
     # Set up a dataframe to hold the results
-    columns = ["test", "algorithm", "mu", "uids", "objective_value"] + CRITERIA
+    columns = [
+        "test",
+        "algorithm",
+        "mu",
+        "t_0",
+        "uids",
+        "objective_value",
+    ] + CRITERIA
     results = pd.DataFrame(data=results, columns=columns).set_index("test")
 
     results.to_csv(
         "mu_tuning_"
         + "n_test="
         + str(n_tests)
-        + "_sample_size="
-        + str(sample_size)
-        + "_mus="
+        + "_mu="
         + str(mu_list)[1:-1].replace(", ", "_")
+        + "_t_0="
+        + str(t_0_list)[1:-1].replace(", ", "_")
         + ".csv"
     )
 
@@ -161,13 +205,13 @@ plt.savefig(
 
 # Age in days distribution
 # We plot two distributions:
-#  - the proportion p1 of videos from the top 4 of the bundle that are more recent than 3 weeks 
+#  - the proportion p1 of videos from the top 4 of the bundle that are more recent than 3 weeks
 #  - the proportion p2 of videos from the rest of the bundle that are more recent than 3 weeks
 algo_list = list(results["algorithm"].unique())
 
-df['age_in_days'] = df.apply(lambda x: get_age_in_days(x, ref_date), axis="columns")
+df["age_in_days"] = df.apply(lambda x: get_age_in_days(x, ref_date), axis="columns")
 
-results['p1']
+results["p1"]
 
 f, axs = plt.subplots(3, 2, figsize=(13, 7), sharex=True, sharey=True)
 for i in range(len(algo_list)):
