@@ -160,7 +160,7 @@ def aggregated_score(series, l, alpha):
 
 
 def random_greedy(
-    data, n_vid=10, l=1 / 10, alpha=0.5, T=1, clipping_parameter=1, mu=0.1, t_0=0
+    data, ref_date, n_vid=10, l=1 / 10, alpha=0.5, T=1, clipping_parameter=1, mu=0.1, t_0=0
 ):
     df = data.copy()  # copy the dataframe to avoid modifying the original
 
@@ -178,7 +178,7 @@ def random_greedy(
     for i in range(n_vid):
         # Compute the objective function
         objective_function_scores = df.loc[~df["uid"].isin(S)].apply(
-            lambda x: F(partial_sums, x, l, alpha, mu, t_0), axis="columns"
+            lambda x: F(partial_sums, x, ref_date, l, alpha, mu, t_0), axis="columns"
         )
 
         # Compute the probability distribution
@@ -203,7 +203,7 @@ def random_greedy(
 
         # Update S and partial sums
         S.append(new)
-        partial_sums = (partial_sums + df.loc[df["uid"] == new, CRITERIA]).iloc[
+        partial_sums[CRITERIA] = (partial_sums[CRITERIA] + df.loc[df["uid"] == new, CRITERIA]).iloc[
             0
         ]  # hack to keep a series
         partial_sums["age_in_days_inverses"] = partial_sums[

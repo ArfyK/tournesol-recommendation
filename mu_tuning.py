@@ -12,10 +12,11 @@ from recommendation import (
     get_age_in_days,
 )
 
+
 ref_date = datetime.datetime(2023, 9, 19, 0, 0)  # one day older than the video database
 
 #### DATA SET UP ####
-dataFrame = pd.read_csv(sys.argv[1])
+df = pd.read_csv(sys.argv[1])
 
 #### TESTS ####
 if len(sys.argv) < 3:  # no results file provided
@@ -33,7 +34,8 @@ if len(sys.argv) < 3:  # no results file provided
 
     clipping_parameter = 1 / 2 * np.log(1000)
 
-    mu_list = [0.5, 5, 50]
+
+    mu_list = [0.5, 5] #[0.5, 5, 50]
 
     t_0_list = [0, 15]  # days
 
@@ -46,12 +48,13 @@ if len(sys.argv) < 3:  # no results file provided
 
         print("     Running Random Greedy: ")
         for mu in mu_list:
-            print("          Mu = " + str(t) + " from " + str(mu_list))
+            print("          Mu = " + str(mu) + " from " + str(mu_list))
             for t_0 in t_0_list:
                 print("               t_0 = " + str(t_0) + " from " + str(t_0_list))
 
                 rg = random_greedy(
-                    df,
+                    data=df,
+                    ref_date=ref_date,
                     n_vid=n_vid,
                     alpha=alpha,
                     l=1 / 10,
@@ -80,7 +83,8 @@ if len(sys.argv) < 3:  # no results file provided
 
             print("     Running random")
             r_75 = random(
-                df,
+                data=df,
+                ref_date=ref_date,
                 n_vid=n_vid,
                 alpha=alpha,
                 pre_selection=True,
@@ -136,7 +140,7 @@ if len(sys.argv) == 3:  # results file provided
     # hack to get the uids as a python list instead of a string
     results["uids"] = results["uids"].apply(lambda x: x[2:-2].split("', '"))
 
-    n_tests = results.shape[0] / len(algo_list)
+    n_tests = results["test"].max()
     mu_list = results.loc[results["mu"].notna(), "mu"].unique()
     t_0_list = results.loc[results["t_0"].notna(), "t_0"].unique()
 
@@ -233,7 +237,7 @@ selection_frequencies.to_csv(
     "selection_frequencies"
     + "_mu="
     + str(mu_list)[1:-1].replace(" ", "_")
-    + "_t_0="
+    + "t_0="
     + str(t_0_list)[1:-1].replace(" ", "_")
     + "n_tests="
     + str(n_tests)
@@ -249,7 +253,7 @@ f, axs = plt.subplots(
 )
 for i in range(len(mu_list)):
     for j in range(len(t_0_list)):
-        sns.barplot(
+        sns.scatterplot(
             data=selection_frequencies,
             x="rank",
             y=algo_list[i * len(mu_list) + j],
@@ -275,7 +279,7 @@ plt.savefig(
     fname="mu_selection_frequencies"
     + "_mu="
     + str(mu_list)[1:-1].replace(" ", "_")
-    + "_t_0="
+    + "t_0="
     + str(t_0_list)[1:-1].replace(" ", "_")
     + "n_tests="
     + str(n_tests)
@@ -323,8 +327,8 @@ for i_t0 in range(len(t_0_list)):
             + str(
                 int(
                     results.loc[
-                        (results["t_0_list"] == t_0_list[i_t0])
-                        & (results["mu_list"] == mu_list[i_mu]),
+                        (results["t_0"] == t_0_list[i_t0])
+                        & (results["mu"] == mu_list[i_mu]),
                         "top_5%",
                     ].sum()
                 )
@@ -339,8 +343,8 @@ g.savefig(
     fname="video_from_top_5_distribution"
     + "_mu="
     + str(mu_list)[1:-1].replace(" ", "_")
-    + "_t_0="
-    + str(t_0)[1:-1].replace(" ", "_")
+    + "t_0="
+    + str(t_0_list)[1:-1].replace(" ", "_")
     + "n_tests="
     + str(n_tests)
     + ".png"
@@ -386,9 +390,9 @@ g.fig.subplots_adjust(
 
 g.savefig(
     fname="video_from_bottom_50_distribution"
-    + "_t="
+    + "_mu="
     + str(mu_list)[1:-1].replace(" ", "_")
-    + "_c="
+    + "t_0="
     + str(t_0_list)[1:-1].replace(" ", "_")
     + "n_tests="
     + str(n_tests)
@@ -409,7 +413,7 @@ def count_videos_in_subset(uids_list, subset):
 
 
 results["top_20_of_last_month"] = results["uids"].apply(
-    lambda x: count_videos_in_subset(x, top_20_from_last_month)
+    lambda x: count_videos_in_subset(x, top_20_of_last_month)
 )
 
 g = sns.FacetGrid(
@@ -430,8 +434,8 @@ for i_t0 in range(len(t_0_list)):
             + str(
                 int(
                     results.loc[
-                        (results["t_0_list"] == t_0_list[i_t0])
-                        & (results["mu_list"] == mu_list[i_mu]),
+                        (results["t_0"] == t_0_list[i_t0])
+                        & (results["mu"] == mu_list[i_mu]),
                         "top_20_of_last_month",
                     ].sum()
                 )
@@ -446,8 +450,8 @@ g.savefig(
     fname="video_from_top_20_distribution"
     + "_mu="
     + str(mu_list)[1:-1].replace(" ", "_")
-    + "_t_0="
-    + str(t_0)[1:-1].replace(" ", "_")
+    + "t_0="
+    + str(t_0_list)[1:-1].replace(" ", "_")
     + "n_tests="
     + str(n_tests)
     + ".png"
