@@ -69,17 +69,14 @@ if len(sys.argv) < 3:  # no results file provided
                 results.append(
                     [
                         k + 1,
-                        "random_greedy mu="
-                        + str(t)
-                        + " t_0="
-                        + str(relative_upper_bound),
+                        "random_greedy mu=" + str(mu) + " t_0=" + str(t_0),
                         mu,
                         t_0,
                         rg["uids"],
                         rg["obj"],
                     ]
                     + maxs_rg
-                )  # We keep the relative upper bound instead of the clipping parameter for interpretability
+                )
 
             print("     Running random")
             r_75 = random(
@@ -139,10 +136,9 @@ if len(sys.argv) == 3:  # results file provided
     # hack to get the uids as a python list instead of a string
     results["uids"] = results["uids"].apply(lambda x: x[2:-2].split("', '"))
 
-    algo_list = results["algorithm"].unique()
     n_tests = results.shape[0] / len(algo_list)
-    mu_list = results["mu"].unique()
-    quantile = float(algo_list[0].split("_")[2].split("=").pop())
+    mu_list = results.loc[results["mu"].notna(), "mu"].unique()
+    t_0_list = results.loc[results["t_0"].notna(), "t_0"].unique()
 
 X = ["objective_value"] + CRITERIA
 
@@ -194,41 +190,206 @@ plt.subplots_adjust(
 )
 
 plt.savefig(
-    fname="mu_criteria_comparison_q="
-    + str(quantile)
-    + "_size="
-    + str(size_list)[1:-1].replace(", ", "_")
+    fname="mu_criteria_comparison"
     + "_n_tests="
+    + str(n_tests)
+    + "_mu="
+    + str(mu_list)[1:-1].replace(", ", "_")
+    + "_t_0="
+    + str(t_0_list)[1:-1].replace(", ", "_")
+    + ".png"
+)
+
+# Selection frequencies
+results = results.dropna()  # removes the results from the uniformly random algorithm
+algo_list = list(results["algorithm"].unique())
+
+selection_frequencies = pd.DataFrame(columns=["uid", "rank"] + algo_list)
+selection_frequencies["uid"] = list(
+    df.sort_values(by="largely_recommended", ascending=False)["uid"]
+)
+
+selection_frequencies["rank"] = list(range(1, df.shape[0] + 1))
+selection_frequencies[algo_list] = np.zeros((df.shape[0], len(algo_list)))
+
+
+def compute_frequencies(selection_frequencies_dataFrame, result_series):
+    selection_frequencies_dataFrame.loc[
+        selection_frequencies_dataFrame["uid"].isin(result_series["uids"]),
+        result_series["algorithm"],
+    ] = (
+        selection_frequencies_dataFrame.loc[
+            selection_frequencies_dataFrame["uid"].isin(result_series["uids"]),
+            result_series["algorithm"],
+        ]
+        + 1
+    )
+
+
+results.apply(lambda x: compute_frequencies(selection_frequencies, x), axis=1)
+selection_frequencies[algo_list] = selection_frequencies[algo_list] / n_tests
+
+selection_frequencies.to_csv(
+    "selection_frequencies"
+    + "_mu="
+    + str(mu_list)[1:-1].replace(" ", "_")
+    + "_t_0="
+    + str(t_0_list)[1:-1].replace(" ", "_")
+    + "n_tests="
+    + str(n_tests)
+    + ".csv"
+)
+
+f, axs = plt.subplots(
+    len(mu_list),
+    len(t_0_list),
+    figsize=(13, 7),
+    sharex=True,
+    sharey=True,
+)
+for i in range(len(mu_list)):
+    for j in range(len(t_0_list)):
+        sns.barplot(
+            data=selection_frequencies,
+            x="rank",
+            y=algo_list[i * len(mu_list) + j],
+            ax=axs[i, j],
+        )
+        axs[i, j].set_title("mu = " + str(mu_list[i]) + " t_0 = " + str(t_0_list[j]))
+        if (i == int(len(mu_list) / 2)) and (j == 0):
+            axs[i, j].yaxis.set_label_text("frequency")
+        else:
+            axs[i, j].yaxis.set_label_text("")
+        if (i == len(mu_list) - 1) and (j == int(len(t_0_list) / 2)):
+            axs[i, j].xaxis.set_label_text("rank")
+        else:
+            axs[i, j].xaxis.set_label_text("")
+        axs[i, j].set_xticks([], minor=True)
+        axs[i, j].set_xticks(list(range(0, 2000, 500)))
+f.suptitle("Selection frequencies of random greedy")
+plt.subplots_adjust(
+    left=0.04, bottom=0.043, right=0.998, top=0.907, wspace=0.055, hspace=0.34
+)
+
+plt.savefig(
+    fname="mu_selection_frequencies"
+    + "_mu="
+    + str(mu_list)[1:-1].replace(" ", "_")
+    + "_t_0="
+    + str(t_0_list)[1:-1].replace(" ", "_")
+    + "n_tests="
     + str(n_tests)
     + ".png"
 )
 
-# Age in days distribution
-# We plot two distributions:
-#  - the proportion p1 of videos from the top 4 of the bundle that are more recent than 3 weeks
-#  - the proportion p2 of videos from the rest of the bundle that are more recent than 3 weeks
-algo_list = list(results["algorithm"].unique())
+# Distributions of the number of videos from the top 5% in the bundle
+quantile_95 = df["tournesol_score"].quantile(0.95)
 
-df["age_in_days"] = df.apply(lambda x: get_age_in_days(x, ref_date), axis="columns")
 
-results["p1"]
+def count_videos_within_threshold(uids_list, dataFrame, quantile, above=True):
+    if above:
+        # returns how many videos from the uids_list have a tournesol_score above the quantile
+        return dataFrame.loc[
+            (dataFrame["uid"].isin(uids_list))
+            & (dataFrame["tournesol_score"] >= quantile)
+        ].shape[0]
+    else:
+        # returns how many videos from the uids_list have a tournesol_score below the quantile
+        return dataFrame.loc[
+            (dataFrame["uid"].isin(uids_list))
+            & (dataFrame["tournesol_score"] <= quantile)
+        ].shape[0]
 
-f, axs = plt.subplots(3, 2, figsize=(13, 7), sharex=True, sharey=True)
-for i in range(len(algo_list)):
-    sns.barplot(data=coverage, x="rank", y=algo_list[i], ax=axs[i % 3, i % 2])
-    axs[i % 3, i % 2].set_title(algo_list[i])
-    axs[i % 3, i % 2].yaxis.set_label_text("count / nbr of tests")
 
-f.suptitle("Coverage of the top " + str(K) + " tournesol scores")
-plt.subplots_adjust(
-    left=0.055, bottom=0.076, right=0.994, top=0.907, wspace=0.072, hspace=0.238
+results["top_5%"] = results["uids"].apply(
+    lambda x: count_videos_within_threshold(x, df, quantile_95, above=True)
 )
 
-plt.savefig(
-    fname="sample_size_coverage_size="
-    + str(size_list)[1:-1].replace(", ", "_")
-    + "_q="
-    + str(quantile)
+g = sns.FacetGrid(
+    results[["top_5%", "mu", "t_0"]],
+    row="mu",
+    col="t_0",
+)
+g.map_dataframe(sns.boxplot, x="top_5%")
+g.set_titles(col_template="mu = {col_name}", row_template="t_0 = {row_name}")
+g.fig.suptitle("Distribution of number of videos from the top 5%")
+
+# Display the total number of videos from top 5% for each algorithm in the subplot title
+for i_t0 in range(len(t_0_list)):
+    for i_mu in range(len(mu_list)):
+        g.axes[i_t0][i_mu].set_title(
+            g.axes[i_t0][i_mu].get_title()
+            + " | Total: "
+            + str(
+                int(
+                    results.loc[
+                        (results["t_0_list"] == t_0_list[i_t0])
+                        & (results["mu_list"] == mu_list[i_mu]),
+                        "top_5%",
+                    ].sum()
+                )
+            )
+        )
+
+g.fig.subplots_adjust(
+    left=0.013, bottom=0.038, right=0.99, top=0.905, wspace=0.072, hspace=0.536
+)
+
+g.savefig(
+    fname="video_from_top_5_distribution"
+    + "_mu="
+    + str(mu_list)[1:-1].replace(" ", "_")
+    + "_t_0="
+    + str(t_0)[1:-1].replace(" ", "_")
+    + "n_tests="
+    + str(n_tests)
+    + ".png"
+)
+
+# Distributions of the number of videos from the bottom 50% in the bundle
+quantile_50 = df["tournesol_score"].quantile(0.5)
+
+results["bottom_50%"] = results["uids"].apply(
+    lambda x: count_videos_within_threshold(x, df, quantile_50, above=False)
+)
+
+g = sns.FacetGrid(
+    results[["bottom_50%", "mu", "t_0"]],
+    row="t_0",
+    col="mu",
+)
+g.map_dataframe(sns.boxplot, x="bottom_50%")
+g.set_titles(col_template="T = {col_name}", row_template="c = {row_name}")
+g.fig.suptitle("Distribution of number of videos from the bottom 50%")
+
+# Display the total number of videos from bottom 50% for each algorithm in the subplot title
+for i_t0 in range(len(t_0_list)):
+    for i_mu in range(len(mu_list)):
+        g.axes[i_t0][i_mu].set_title(
+            g.axes[i_t0][i_mu].get_title()
+            + " | Total: "
+            + str(
+                int(
+                    results.loc[
+                        (results["t_0"] == t_0_list[i_t0])
+                        & (results["mu"] == mu_list[i_mu]),
+                        "bottom_50%",
+                    ].sum()
+                )
+            )
+        )
+
+
+g.fig.subplots_adjust(
+    left=0.013, bottom=0.038, right=0.99, top=0.905, wspace=0.072, hspace=0.536
+)
+
+g.savefig(
+    fname="video_from_bottom_50_distribution"
+    + "_t="
+    + str(mu_list)[1:-1].replace(" ", "_")
+    + "_c="
+    + str(t_0_list)[1:-1].replace(" ", "_")
     + "n_tests="
     + str(n_tests)
     + ".png"
