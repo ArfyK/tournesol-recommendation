@@ -153,6 +153,7 @@ def aggregated_score(series, l, alpha):
     # Resembles the F objective function
     return series["largely_recommended"] + l * series[CRITERIA[1:]].sum()
 
+
 def random_greedy(data, n_vid=10, l=1 / 10, alpha=0.5, T=1, clipping_parameter=1):
     df = data.copy()  # copy the dataframe to avoid modifying the original
 
@@ -201,6 +202,7 @@ def random_greedy(data, n_vid=10, l=1 / 10, alpha=0.5, T=1, clipping_parameter=1
     objective = objective_function_scores[new_idx]
 
     return {"uids": S, "obj": objective}
+
 
 def deterministic_random_sample(
     data,
@@ -313,14 +315,6 @@ if __name__ == "__main__":
         size = 100
 
         alpha = 0.5  # exponent of the power function used in the objective function
-
-<<<<<<< HEAD
-        mu = 0.1
-
-        ref_date = datetime.datetime(2023, 5, 10, 0, 0)
-=======
-        T = 80  # temperature used in random_greedy
->>>>>>> temperature
 
         n_vid = 12
 
