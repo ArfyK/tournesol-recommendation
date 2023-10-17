@@ -15,9 +15,11 @@ if len(sys.argv) < 3:  # no results file provided
 
     alpha = 0.5  # exponent of the power function used in the objective function
 
-    n_vid = 10
+    n_vid = 12
 
-    temp_list = [20, 40, 60, 80]
+    temperature_list = [0.001, 0.01, 0.1, 1, 10]
+
+    relative_upper_bound_list = [1000, 3250, 5500, 7750, 10000]
 
     results = []
 
@@ -26,63 +28,76 @@ if len(sys.argv) < 3:  # no results file provided
 
         maxs = df[CRITERIA].max()
 
-        for t in temp_list:
-            m = (df[CRITERIA] - df[CRITERIA].min()).mean().mean()
+        print("     Running Random Greedy: ")
+        for t in temperature_list:
+            print("          Temperature " + str(t) + " from " + str(temperature_list))
+            for relative_upper_bound in relative_upper_bound_list:
+                print(
+                    "               Relative upper bound from "
+                    + str(relative_upper_bound)
+                    + " from "
+                    + str(relative_upper_bound_list)
+                )
 
-            rg = random_greedy(df, n_vid=n_vid, alpha=alpha, l=1 / 10 * m, T=t)
-            maxs_rg = (
-                df.loc[df["uid"].isin(rg["uids"]), CRITERIA]
+                clipping_parameter = 1 / 2 * np.log(relative_upper_bound)
+
+                rg = random_greedy(
+                    df,
+                    n_vid=n_vid,
+                    alpha=alpha,
+                    l=1 / 10,
+                    T=t,
+                    clipping_parameter=clipping_parameter,
+                )
+                maxs_rg = (
+                    df.loc[df["uid"].isin(rg["uids"]), CRITERIA]
+                    .max()
+                    .divide(maxs)
+                    .to_list()
+                )
+                results.append(
+                    [
+                        k + 1,
+                        "random_greedy T=" + str(t) + " c=" + str(relative_upper_bound),
+                        t,
+                        relative_upper_bound,
+                        rg["uids"],
+                        rg["obj"],
+                    ]
+                    + maxs_rg
+                )  # We keep the relative upper bound instead of the clipping parameter for interpretability
+
+            print("     Running random")
+            r_75 = random(
+                df, n_vid=n_vid, alpha=alpha, pre_selection=True, quantile=0.75
+            )
+            maxs_75 = (
+                df.loc[df["uid"].isin(r_75["uids"]), CRITERIA]
                 .max()
                 .divide(maxs)
                 .to_list()
             )
             results.append(
-                [k + 1, "rg_l=1/10*m_t=" + str(t), alpha, rg["uids"], rg["obj"]]
-                + maxs_rg
+                [
+                    k + 1,
+                    "r_75",
+                    None,
+                    None,
+                    r_75["uids"],
+                    r_75["obj"],
+                ]
+                + maxs_75
             )
 
-        r_75 = random(df, n_vid=n_vid, alpha=alpha, pre_selection=True, quantile=0.75)
-        maxs_75 = (
-            df.loc[df["uid"].isin(r_75["uids"]), CRITERIA].max().divide(maxs).to_list()
-        )
-        results.append(
-            [
-                k + 1,
-                "r_75",
-                alpha,
-                r_75["uids"],
-                r_75["obj"],
-            ]
-            + maxs_75
-        )
-
-        r_agg_75 = random(
-            df,
-            n_vid=n_vid,
-            alpha=alpha,
-            pre_selection=True,
-            quantile=0.75,
-            key=aggregated_score,
-        )
-        maxs_agg_75 = (
-            df.loc[df["uid"].isin(r_agg_75["uids"]), CRITERIA]
-            .max()
-            .divide(maxs)
-            .to_list()
-        )
-        results.append(
-            [
-                k + 1,
-                "r_agg_75",
-                alpha,
-                r_agg_75["uids"],
-                r_agg_75["obj"],
-            ]
-            + maxs_agg_75
-        )
-
     # Set up a dataframe to hold the results
-    columns = ["test", "algorithm", "alpha", "uids", "objective_value"] + CRITERIA
+    columns = [
+        "test",
+        "algorithm",
+        "temperature",
+        "relative_upper_bound",
+        "uids",
+        "objective_value",
+    ] + CRITERIA
     results = pd.DataFrame(data=results, columns=columns).set_index("test")
 
     results.to_csv(
@@ -90,7 +105,9 @@ if len(sys.argv) < 3:  # no results file provided
         + "n_test="
         + str(n_tests)
         + "_t="
-        + str(temp_list)[1:-1].replace(", ", "_")
+        + str(temperature_list)[1:-1].replace(", ", "_")
+        + "_c="
+        + str(relative_upper_bound_list)[1:-1].replace(", ", "_")
         + ".csv"
     )
 
@@ -102,31 +119,20 @@ if len(sys.argv) == 3:  # results file provided
     # hack to get the uids as a python list instead of a string
     results["uids"] = results["uids"].apply(lambda x: x[2:-2].split("', '"))
 
-    algo_list = results["algorithm"].unique()
-    n_tests = results.shape[0] / len(algo_list)
+    n_vid_per_bundle = len(results.loc[1, "uids"])
 
-    # hack to retrieve the temperature list from the algorithms name
-    temp_algo_list = list(algo_list)
-    temp_algo_list.remove("r_75")
-    temp_algo_list.remove("r_agg_75")
-    temp_list = [float(algo.split("=").pop()) for algo in temp_algo_list]
+    n_tests = results["test"].max()
+
+    temperature_list = results.loc[
+        ~results["temperature"].isna(), "temperature"
+    ].unique()
+    relative_upper_bound_list = results.loc[
+        ~results["relative_upper_bound"].isna(), "relative_upper_bound"
+    ].unique()
 
 X = ["objective_value"] + CRITERIA
 
 # Comparison between objective values and the maximum of each criteria
-f, axs = plt.subplots(3, 4, figsize=(13, 7), sharey=True)
-
-for i in range(len(X)):
-    sns.boxplot(data=results, x=X[i], y="algorithm", ax=axs[i % 3, i % 4], orient="h")
-    sns.stripplot(
-        data=results,
-        x=X[i],
-        y="algorithm",
-        ax=axs[i % 3, i % 4],
-    )
-
-    axs[i % 3, i % 4].xaxis.grid(True)
-    axs[i % 3, i % 4].set_ylabel("")
 
 
 # Number of different channel featured in the selection:
@@ -136,126 +142,272 @@ def unique_channel(
     return df.loc[df["uid"].isin(uids), "uploader"].unique().shape[0]
 
 
-n_vid_per_recommendation = len(results.loc[1, "uids"])
-results["n_channel"] = results["uids"].apply(lambda x: unique_channel(df, x))
+# 1 plot per temperature value for visibility
+for t in temperature_list:
+    f, axs = plt.subplots(3, 4, figsize=(13, 7), sharey=True)
+    results_temperature_t = results.loc[
+        (results["temperature"] == t) | (results["temperature"].isna())
+    ]
 
-sns.boxplot(
-    data=results,
-    x="n_channel",
-    y="algorithm",
-    orient="h",
-    ax=axs[2, 3],
-)
-sns.stripplot(
-    data=results,
-    x="n_channel",
-    y="algorithm",
-    ax=axs[2, 3],
-)
+    # Plot the distributions of the objective value and the maximum of each criteria
+    for i in range(len(X)):
+        sns.boxplot(
+            data=results_temperature_t,
+            x=X[i],
+            y="algorithm",
+            ax=axs[i % 3, i % 4],
+            orient="h",
+        )
+        sns.stripplot(
+            data=results_temperature_t,
+            x=X[i],
+            y="algorithm",
+            ax=axs[i % 3, i % 4],
+        )
 
-axs[2, 3].xaxis.grid(True)
-axs[2, 3].set_ylabel("")
+        axs[i % 3, i % 4].set_ylabel("")
+        if i == 4:
+            axs[i % 3, i % 4].yaxis.set_label_text("relative upper bound")
 
-plt.subplots_adjust(
-    left=0.12, bottom=0.074, right=0.998, top=0.976, wspace=0.062, hspace=0.264
-)
+        axs[i % 3, i % 4].xaxis.grid(True)
 
-plt.savefig(
-    fname="temperature_criteria_comparison_t="
-    + str(temp_list)[1:-1].replace(", ", "_")
-    + "_n_tests="
-    + str(n_tests)
-    + ".png"
-)
+    # Plot the number of different channel in each bundle
+    results_temperature_t.insert(
+        0,
+        "n_channel",
+        results_temperature_t["uids"].apply(lambda x: unique_channel(df, x)),
+    )
 
-# Coverage of the top K of tournesol scores
-K = 200
+    sns.boxplot(
+        data=results_temperature_t,
+        x="n_channel",
+        y="algorithm",
+        orient="h",
+        ax=axs[2, 3],
+    )
+    sns.stripplot(
+        data=results_temperature_t,
+        x="n_channel",
+        y="algorithm",
+        ax=axs[2, 3],
+    )
 
+    axs[2, 3].xaxis.grid(True)
+    axs[2, 3].set_ylabel("")
+
+    f.suptitle(
+        "Objective value, Maximum of each criteria and number of channel per bundle for T ="
+        + str(t)
+    )
+    plt.subplots_adjust(
+        left=0.043, bottom=0.074, right=0.995, top=0.94, wspace=0.062, hspace=0.264
+    )
+
+    plt.savefig(
+        fname="temperature_criteria_comparison_t="
+        + str(t)
+        + "_c="
+        + str(relative_upper_bound_list)[1:-1].replace(" ", "_")
+        + "_n_tests="
+        + str(n_tests)
+        + ".png"
+    )
+
+# Selection frequencies
+results = results.dropna()  # removes the results from the uniformly random algorithm
 algo_list = list(results["algorithm"].unique())
 
-coverage = pd.DataFrame(columns=["uid", "rank"] + algo_list)
-coverage["uid"] = list(
-    df.sort_values(by="largely_recommended", ascending=False)["uid"].iloc[0:K]
+selection_frequencies = pd.DataFrame(columns=["uid", "rank"] + algo_list)
+selection_frequencies["uid"] = list(
+    df.sort_values(by="largely_recommended", ascending=False)["uid"]
 )
 
-coverage["rank"] = list(range(1, K + 1))
-coverage[algo_list] = np.zeros((K, len(algo_list)))
+selection_frequencies["rank"] = list(range(1, df.shape[0] + 1))
+selection_frequencies[algo_list] = np.zeros((df.shape[0], len(algo_list)))
 
 
-def compute_coverage(coverage_df, result_series):
-    coverage_df.loc[
-        coverage_df["uid"].isin(result_series["uids"]), result_series["algorithm"]
+def compute_frequencies(selection_frequencies_dataFrame, result_series):
+    selection_frequencies_dataFrame.loc[
+        selection_frequencies_dataFrame["uid"].isin(result_series["uids"]),
+        result_series["algorithm"],
     ] = (
-        coverage_df.loc[
-            coverage_df["uid"].isin(result_series["uids"]), result_series["algorithm"]
+        selection_frequencies_dataFrame.loc[
+            selection_frequencies_dataFrame["uid"].isin(result_series["uids"]),
+            result_series["algorithm"],
         ]
         + 1
     )
 
 
-results.apply(lambda x: compute_coverage(coverage, x), axis=1)
-coverage[algo_list] = coverage[algo_list] * len(algo_list) / results.shape[0]
+results.apply(lambda x: compute_frequencies(selection_frequencies, x), axis=1)
+selection_frequencies[algo_list] = selection_frequencies[algo_list] / n_tests
 
-f, axs = plt.subplots(3, 2, figsize=(13, 7), sharex=True, sharey=True)
-for i in range(len(algo_list)):
-    sns.barplot(data=coverage, x="rank", y=algo_list[i], ax=axs[i % 3, i % 2])
-    axs[i % 3, i % 2].set_title(algo_list[i])
-    axs[i % 3, i % 2].set_yscale("log")
-    axs[i % 3, i % 2].yaxis.set_label_text("count / nbr of tests")
+selection_frequencies.to_csv(
+    "selection_frequencies"
+    + "_t="
+    + str(temperature_list)[1:-1].replace(" ", "_")
+    + "_c="
+    + str(relative_upper_bound_list)[1:-1].replace(" ", "_")
+    + "n_tests="
+    + str(n_tests)
+    + ".csv"
+)
 
-f.suptitle("Coverage of the top " + str(K) + " tournesol scores")
+f, axs = plt.subplots(
+    len(temperature_list),
+    len(relative_upper_bound_list),
+    figsize=(13, 7),
+    sharex=True,
+    sharey=True,
+)
+for i in range(len(temperature_list)):
+    for j in range(len(relative_upper_bound_list)):
+        sns.barplot(
+            data=selection_frequencies,
+            x="rank",
+            y=algo_list[i * len(temperature_list) + j],
+            ax=axs[i, j],
+        )
+        axs[i, j].set_title(
+            "T = "
+            + str(temperature_list[i])
+            + " C = "
+            + str(relative_upper_bound_list[j])
+        )
+        if (i == int(len(temperature_list) / 2)) and (j == 0):
+            axs[i, j].yaxis.set_label_text("frequency")
+        else:
+            axs[i, j].yaxis.set_label_text("")
+        if (i == len(temperature_list) - 1) and (
+            j == int(len(relative_upper_bound_list) / 2)
+        ):
+            axs[i, j].xaxis.set_label_text("rank")
+        else:
+            axs[i, j].xaxis.set_label_text("")
+        axs[i, j].set_xticks([], minor=True)
+        axs[i, j].set_xticks(list(range(0, 2000, 500)))
+f.suptitle("Selection frequencies of random greedy")
 plt.subplots_adjust(
-    left=0.055, bottom=0.076, right=0.994, top=0.907, wspace=0.072, hspace=0.238
+    left=0.04, bottom=0.043, right=0.998, top=0.907, wspace=0.055, hspace=0.34
 )
 
 plt.savefig(
-    fname="temperature_coverage_tournesolscore_t="
-    + str(temp_list)[1:-1].replace(", ", "_")
+    fname="temperature_selection_frequencies_t="
+    + str(temperature_list)[1:-1].replace(" ", "_")
+    + "_c="
+    + str(relative_upper_bound_list)[1:-1].replace(" ", "_")
     + "n_tests="
     + str(n_tests)
     + ".png"
 )
 
-# Coverage of top K ranking the videos with a function resembling the objective function
+# Distributions of the number of videos from the top 5% in the bundle
+quantile_95 = df["tournesol_score"].quantile(0.95)
 
 
-def aggregated_score(video_scores_series, l=1 / 10, alpha=1 / 2):
-    tournesol_score = video_scores_series[CRITERIA[0]]
-    criteria_aggregation = (
-        l * video_scores_series[CRITERIA[1:]].apply(lambda x: x**alpha).sum()
-    )
-    return tournesol_score + criteria_aggregation
+def count_videos_within_threshold(uids_list, dataFrame, quantile, above=True):
+    if above:
+        # returns how many videos from the uids_list have a tournesol_score above the quantile
+        return dataFrame.loc[
+            (dataFrame["uid"].isin(uids_list))
+            & (dataFrame["tournesol_score"] >= quantile)
+        ].shape[0]
+    else:
+        # returns how many videos from the uids_list have a tournesol_score below the quantile
+        return dataFrame.loc[
+            (dataFrame["uid"].isin(uids_list))
+            & (dataFrame["tournesol_score"] <= quantile)
+        ].shape[0]
 
 
-df["aggregated_score"] = df.apply(aggregated_score, axis="columns")
-
-coverage = pd.DataFrame(columns=["uid", "rank"] + algo_list)
-coverage["uid"] = list(
-    df.sort_values(by="aggregated_score", ascending=False)["uid"].iloc[0:K]
+results["top_5%"] = results["uids"].apply(
+    lambda x: count_videos_within_threshold(x, df, quantile_95, above=True)
 )
 
-coverage["rank"] = list(range(1, K + 1))
-coverage[algo_list] = np.zeros((K, len(algo_list)))
+g = sns.FacetGrid(
+    results[["top_5%", "temperature", "relative_upper_bound"]],
+    row="relative_upper_bound",
+    col="temperature",
+)
+g.map_dataframe(sns.boxplot, x="top_5%")
+g.set_titles(col_template="T = {col_name}", row_template="c = {row_name}")
+g.fig.suptitle("Distribution of number of videos from the top 5%")
 
-results.apply(lambda x: compute_coverage(coverage, x), axis=1)
-coverage[algo_list] = coverage[algo_list] * len(algo_list) / results.shape[0]
+# Display the total number of videos from top 5% for each algorithm in the subplot title
+for i_c in range(len(relative_upper_bound_list)):
+    for i_t in range(len(temperature_list)):
+        g.axes[i_c][i_t].set_title(
+            g.axes[i_c][i_t].get_title()
+            + " | Total: "
+            + str(
+                int(results.loc[
+                    (results["relative_upper_bound"] == relative_upper_bound_list[i_c])
+                    & (results["temperature"] == temperature_list[i_t]),
+                    "top_5%",
+                ].sum())
+            )
+        )
 
-f, axs = plt.subplots(3, 2, figsize=(13, 7), sharex=True, sharey=True)
-for i in range(len(algo_list)):
-    sns.barplot(data=coverage, x="rank", y=algo_list[i], ax=axs[i % 3, i % 2])
-    axs[i % 3, i % 2].set_title(algo_list[i])
-    axs[i % 3, i % 2].set_yscale("log")
-    axs[i % 3, i % 2].yaxis.set_label_text("count / nbr of tests")
-
-f.suptitle("Coverage of the top " + str(K) + " aggregated scores")
-plt.subplots_adjust(
-    left=0.055, bottom=0.076, right=0.994, top=0.907, wspace=0.072, hspace=0.238
+g.fig.subplots_adjust(
+    left=0.013, bottom=0.038, right=0.99, top=0.905, wspace=0.072, hspace=0.536
 )
 
-plt.savefig(
-    fname="temperature_coverage_aggregatedscore_t="
-    + str(temp_list)[1:-1].replace(", ", "_")
-    + "_n_tests="
+g.savefig(
+    fname="video_from_top_5_distribution"
+    + "_t="
+    + str(temperature_list)[1:-1].replace(" ", "_")
+    + "_c="
+    + str(relative_upper_bound_list)[1:-1].replace(" ", "_")
+    + "n_tests="
     + str(n_tests)
     + ".png"
 )
+
+# Distributions of the number of videos from the bottom 50% in the bundle
+quantile_50 = df["tournesol_score"].quantile(0.5)
+
+results["bottom_50%"] = results["uids"].apply(
+    lambda x: count_videos_within_threshold(x, df, quantile_50, above=False)
+)
+
+g = sns.FacetGrid(
+    results[["bottom_50%", "temperature", "relative_upper_bound"]],
+    row="relative_upper_bound",
+    col="temperature",
+)
+g.map_dataframe(sns.boxplot, x="bottom_50%")
+g.set_titles(col_template="T = {col_name}", row_template="c = {row_name}")
+g.fig.suptitle("Distribution of number of videos from the bottom 50%")
+
+# Display the total number of videos from bottom 50% for each algorithm in the subplot title
+for i_c in range(len(relative_upper_bound_list)):
+    for i_t in range(len(temperature_list)):
+        g.axes[i_c][i_t].set_title(
+            g.axes[i_c][i_t].get_title()
+            + " | Total: "
+            + str(
+                int(results.loc[
+                    (results["relative_upper_bound"] == relative_upper_bound_list[i_c])
+                    & (results["temperature"] == temperature_list[i_t]),
+                    "bottom_50%",
+                ].sum())
+            )
+        )
+
+
+g.fig.subplots_adjust(
+    left=0.013, bottom=0.038, right=0.99, top=0.905, wspace=0.072, hspace=0.536
+)
+
+g.savefig(
+    fname="video_from_bottom_50_distribution"
+    + "_t="
+    + str(temperature_list)[1:-1].replace(" ", "_")
+    + "_c="
+    + str(relative_upper_bound_list)[1:-1].replace(" ", "_")
+    + "n_tests="
+    + str(n_tests)
+    + ".png"
+)
+
+

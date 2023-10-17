@@ -153,6 +153,54 @@ def aggregated_score(series, l, alpha):
     # Resembles the F objective function
     return series["largely_recommended"] + l * series[CRITERIA[1:]].sum()
 
+def random_greedy(data, n_vid=10, l=1 / 10, alpha=0.5, T=1, clipping_parameter=1):
+    df = data.copy()  # copy the dataframe to avoid modifying the original
+
+    # Normalizes the dataframe
+    contains_na = df[CRITERIA].isna().apply(any, axis="columns")
+
+    df[CRITERIA] = df[CRITERIA] - df[CRITERIA].min()
+    df = df.fillna(0)
+
+    # Selection of videos scored according to all criteria
+    S = []  # uids of the selected videos
+    partial_sums = pd.Series(data=[0] * len(CRITERIA), index=CRITERIA)
+
+    for i in range(n_vid):
+        # Compute the objective function
+        objective_function_scores = df.loc[~df["uid"].isin(S)].apply(
+            lambda x: F(partial_sums, x, l, alpha), axis="columns"
+        )
+
+        # Compute the probability distribution
+        objective_function_scores_mean = objective_function_scores.mean()
+        p = objective_function_scores.apply(
+            lambda x: np.exp(
+                np.clip(
+                    (x - objective_function_scores_mean) / T,
+                    -clipping_parameter,
+                    clipping_parameter,
+                )
+            )
+        )
+        norm = p.sum()
+        p = p.apply(lambda x: x / norm)
+
+        # sample a new element from p
+        new_idx = np.random.choice(
+            a=objective_function_scores.index, size=1, replace=False, p=p
+        )[0]
+        new = df.loc[new_idx, "uid"]
+
+        # Update S and partial sums
+        S.append(new)
+        partial_sums = (partial_sums + df.loc[df["uid"] == new, CRITERIA]).iloc[
+            0
+        ]  # hack to keep a series
+
+    objective = objective_function_scores[new_idx]
+
+    return {"uids": S, "obj": objective}
 
 def deterministic_random_sample(
     data,
@@ -266,9 +314,13 @@ if __name__ == "__main__":
 
         alpha = 0.5  # exponent of the power function used in the objective function
 
+<<<<<<< HEAD
         mu = 0.1
 
         ref_date = datetime.datetime(2023, 5, 10, 0, 0)
+=======
+        T = 80  # temperature used in random_greedy
+>>>>>>> temperature
 
         n_vid = 12
 
