@@ -20,7 +20,7 @@ df = pd.read_csv(sys.argv[1])
 
 #### TESTS ####
 if len(sys.argv) < 3:  # no results file provided
-    n_tests = 1
+    n_tests = 100
 
     alpha = 0.5  # exponent of the power function used in the objective function
 
@@ -35,7 +35,7 @@ if len(sys.argv) < 3:  # no results file provided
     clipping_parameter = 1 / 2 * np.log(1000)
 
 
-    mu_list = [0.5, 5] #[0.5, 5, 50]
+    mu_list = [0.5, 1.6, 2.7, 3.8, 5.0]
 
     t_0_list = [0, 15]  # days
 
@@ -205,7 +205,7 @@ plt.savefig(
 )
 
 # Selection frequencies
-results = results.dropna()  # removes the results from the uniformly random algorithm
+results = results.dropna()  # removes the results of the uniformly random algorithm
 algo_list = list(results["algorithm"].unique())
 
 selection_frequencies = pd.DataFrame(columns=["uid", "rank"] + algo_list)
@@ -253,10 +253,10 @@ f, axs = plt.subplots(
 )
 for i in range(len(mu_list)):
     for j in range(len(t_0_list)):
-        sns.scatterplot(
+        sns.barplot(
             data=selection_frequencies,
             x="rank",
-            y=algo_list[i * len(mu_list) + j],
+            y=algo_list[i * len(t_0_list) + j],
             ax=axs[i, j],
         )
         axs[i, j].set_title("mu = " + str(mu_list[i]) + " t_0 = " + str(t_0_list[j]))
@@ -311,8 +311,8 @@ results["top_5%"] = results["uids"].apply(
 
 g = sns.FacetGrid(
     results[["top_5%", "mu", "t_0"]],
-    row="mu",
-    col="t_0",
+    row="t_0",
+    col="mu",
 )
 g.map_dataframe(sns.boxplot, x="top_5%")
 g.set_titles(col_template="mu = {col_name}", row_template="t_0 = {row_name}")
@@ -418,8 +418,8 @@ results["top_20_of_last_month"] = results["uids"].apply(
 
 g = sns.FacetGrid(
     results[["top_20_of_last_month", "mu", "t_0"]],
-    row="mu",
-    col="t_0",
+    row="t_0",
+    col="mu",
 )
 g.map_dataframe(sns.boxplot, x="top_20_of_last_month")
 g.set_titles(col_template="mu = {col_name}", row_template="t_0 = {row_name}")
