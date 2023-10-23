@@ -22,7 +22,7 @@ CRITERIA = [
 
 def get_age_in_days(video_series, ref_date):
     # return 1 if the video is less than a day old
-    return min(
+    return max(
         (
             ref_date
             - datetime.datetime.strptime(
