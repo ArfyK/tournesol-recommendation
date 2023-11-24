@@ -1,10 +1,11 @@
+import requests
+import sys
+import datetime
+
 import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
-import requests
-import sys
-import datetime
 
 CRITERIA = [
     "largely_recommended",
@@ -20,6 +21,58 @@ CRITERIA = [
 ]
 
 
+def greedy(
+    data,
+    score,
+    update_state,
+    score,
+    selection,
+    normalization=None,
+    preselection=None,
+    bundle_size=12,
+    **kwargs,
+):
+    if normalization:
+        data = normalization(data, **kwargs)
+    if preselection:
+        data = preselection(data, **kwargs)
+
+    bundle = []
+    state = None
+
+    for i in range(bundle_size):
+        scores = data.apply(lambda x: score(x, state, **kwargs), axis="columns")
+
+        new_index = selection(scores, **kwargs)
+        new_item = data.iat[new_index]
+        bundle.append(new_index["uid"])
+
+        state = update_state(new_index, state, **kwargs)
+
+    return {"bundle": bundle, "score": scores.iat[new_index]}
+
+
+### Normalizations
+def normalization(data, **kwargs):
+    return (data[CRITERIA] - data[CRITERIA].min()).fillna(0)
+
+
+### Preselections
+def above_quantile(data, key, quantile, **kwargs):
+    if type(key) == str:
+        return data.loc[data[key] >= data[key].quantile(quantile)]
+
+    data["key"] = data.apply(lambda x: key(x, **kwargs), axis="columns")
+    return data.loc[data["key"] >= data["key"].quantile(quantile)]
+
+
+def uniform_sampling(data, sample_size, **kwargs):
+    return data.loc[np.random.choice(a=data.index, size=sample_size, replace=False)]
+
+
+### Score functions and their associated update_state functions
+
+
 def get_age_in_days(video_series, ref_date):
     # return 1 if the video is less than a day old
     return max(
@@ -33,11 +86,11 @@ def get_age_in_days(video_series, ref_date):
     )  # remove the time part of the datetime with the split because some entries only have the date part.
 
 
-### Greedy objective functions
+def F(new, partial_sums, ref_date, l=1 / 10, alpha=0.5, mu=0.1, t_0=0, **kwargs):
+    if not partial_sums:
+        index = CRITERIA + ["age_in_days_inverses"]
+        partial_sums = pd.Series(data=[0] * len(index), index=index)
 
-
-# Complete Objective function
-def F(partial_sums, new, ref_date, l=1 / 10, alpha=0.5, mu=0.1, t_0=0):
     # Relevance term
     R = partial_sums["largely_recommended"] + new["largely_recommended"]
     # Diversity term
@@ -56,8 +109,18 @@ def F(partial_sums, new, ref_date, l=1 / 10, alpha=0.5, mu=0.1, t_0=0):
     return R + l * C + mu * D
 
 
-# Incomplete objective function
-def F_incomplete(partial_sums, new, ref_date, alpha=0.5, mu=0.1, t_0=0):
+def F_state_update(new, partial_sums, ref_date, t_0=0, **kwargs):
+    partial_sums[CRITERIA] = (partial_sums[CRITERIA] + new[CRITERIA]).iloc[
+        0
+    ]  # hack to keep a series
+    partial_sums["age_in_days_inverses"] = partial_sums["age_in_days_inverses"] + 1 / (
+        t_0 + get_age_in_days(new, ref_date)
+    )
+
+    return partial_sums
+
+
+def F_incomplete(new, partial_sums, ref_date, alpha=0.5, mu=0.1, t_0=0):
     # Relevance term
     R = partial_sums["largely_recommended"] + new["largely_recommended"]
     # Recency term
@@ -67,6 +130,37 @@ def F_incomplete(partial_sums, new, ref_date, alpha=0.5, mu=0.1, t_0=0):
     ) ** alpha
 
     return R + mu * D
+
+
+def F_incomplete_state_update(new, partial_sums, ref_date, t_0=0, **kwargs):
+    partial_sums["largely_recommended"] = (
+        partial_sums["largely_recommended"] + new["largely_recommended"]
+    ).iloc[
+        0
+    ]  # hack to get a series
+    partial_sums["age_in_days_inverses"] = partial_sums["age_in_days_inverses"] + 1 / (
+        t_0 + get_age_in_days(new, ref_date)
+    )
+
+    return partial_sums
+
+
+### Selection functions
+def random_selection(scores, score_transform=None, center=True, **kwargs):
+    if not score_transform:
+        # by default the distribution is uniform
+        score_transform = lambda x: 1
+
+    if center:
+        scores = scores - scores.mean()
+
+    distribution = scores.apply(lambda x: score_transform(x, **kwargs))
+    distribution = distribution / distribution.sum()
+    return np.random.choice(a=scores.index, size=1, p=distribution)
+
+
+def exponential(x, temperature, clipping_parameter, **kwargs):
+    return np.exp(np.clip(x / temperature, clipping_parameter, -clipping_parameter))
 
 
 def deterministic_greedy(
@@ -160,7 +254,15 @@ def aggregated_score(series, l, alpha):
 
 
 def random_greedy(
-    data, ref_date, n_vid=10, l=1 / 10, alpha=0.5, T=1, clipping_parameter=1, mu=0.1, t_0=0
+    data,
+    ref_date,
+    n_vid=10,
+    l=1 / 10,
+    alpha=0.5,
+    T=1,
+    clipping_parameter=1,
+    mu=0.1,
+    t_0=0,
 ):
     df = data.copy()  # copy the dataframe to avoid modifying the original
 
@@ -203,7 +305,9 @@ def random_greedy(
 
         # Update S and partial sums
         S.append(new)
-        partial_sums[CRITERIA] = (partial_sums[CRITERIA] + df.loc[df["uid"] == new, CRITERIA]).iloc[
+        partial_sums[CRITERIA] = (
+            partial_sums[CRITERIA] + df.loc[df["uid"] == new, CRITERIA]
+        ).iloc[
             0
         ]  # hack to keep a series
         partial_sums["age_in_days_inverses"] = partial_sums[
