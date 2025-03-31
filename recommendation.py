@@ -32,7 +32,7 @@ def greedy(
     **kwargs,
 ):
     r"""
-    Greedily generates a subset of data according to a given scoring function.
+    Generates a subset of data by greedily maximizing a score function.
 
     Parameters
     ----------
