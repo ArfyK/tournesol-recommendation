@@ -31,7 +31,8 @@ def greedy(
     bundle_size=12,
     **kwargs,
 ):
-    """Greedily generates a subset of data according to a given scoring function.
+    r"""
+    Greedily generates a subset of data according to a given scoring function.
 
     Parameters
     ----------
@@ -49,6 +50,11 @@ def greedy(
         `preselection(data, **kwargs)` returns a panda DataFrame containing a subset of `data`'s rows.
     bundle_size: int
         Size of the generated subset.
+
+    Returns
+    -------
+    dict
+        {"bundle": list, "score": int} where list if the indexes list of the generated subset's elements and int is the subset's score according to the `score` callable.
     """
     if normalization:
         data = normalization(data, **kwargs)
