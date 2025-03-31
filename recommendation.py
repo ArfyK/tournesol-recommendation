@@ -50,6 +50,8 @@ def greedy(
         `preselection(data, **kwargs)` returns a panda DataFrame containing a subset of `data`'s rows.
     bundle_size: int
         Size of the generated subset.
+    kwargs
+        keywords arguments that are passed to `score`, `update_state`, `selection` and `pre_selection`.
 
     Returns
     -------
