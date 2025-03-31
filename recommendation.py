@@ -31,6 +31,25 @@ def greedy(
     bundle_size=12,
     **kwargs,
 ):
+    """Greedily generates a subset of data according to a given scoring function.
+
+    Parameters
+    ----------
+    data : panda DataFrame
+        Each line represents an element and each column is a feature.
+    score : callable object
+        Scoring function: `score(x, state, **kwargs)` returns the score of the subset S \union {`x`} where S is a subset represented by the state `state` and `x` is an additional element.
+    update_state : callable object
+        `update_state(new_item, state, **kwargs)`: returns the state of S \union {`new_item`} where S is a subset represented by `state`.
+    selection: callable objection
+        Select a new index according to subset scores : `selection(scores, **kwargs)` return and index given a panda Series `scores`.
+    normalization: callable object
+        `normalization(data, **kwargs)` returns a normalized version of `data`.
+    preselection: callable object
+        `preselection(data, **kwargs)` returns a panda DataFrame containing a subset of `data`'s rows.
+    bundle_size: int
+        Size of the generated subset.
+    """
     if normalization:
         data = normalization(data, **kwargs)
     if preselection:
