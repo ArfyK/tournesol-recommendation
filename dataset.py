@@ -1,13 +1,38 @@
-import pandas
+import io
+import zipfile
+
+import pandas as pd
 import requests
 
 
-def build_dataset(collective_criteria_scores, youtube_api_key, tournesol_score_threshold=None):
+def build_dataset(youtube_api_key, tournesol_score_threshold=None):
+    r"""
+    Use the collective_criteria_scores returned by the Tournesol API and the youtube API to build a detailed dataset of youtube videos.
+
+    The returned dataFrame consists in the pivoted collective_criteria_scores and additional metadata sent by the youtube API: publication_date, title, channel, view_count, duration.
+
+    Parameters
+    ----------
+    youtube_api_key : str
+        API key to request "https://youtube.googleapis.com/youtube/v3/videos?part=snippet&part=contentDetails&part=statistics&key=<youtube_api_key>&id=<ids>"
+    tournesol_score_threshold : float
+        Score threshold to filter videos having a low tournesol_score.
+
+    Returns
+    -------
+    pandas.DataFrame
+    """
+    response = requests.get("https://api.tournesol.app/exports/all")
+    zip_file = zipfile.ZipFile(io.BytesIO(response.content))
+    collective_scores = pd.read_csv(zip_file.open("collective_criteria_scores.csv"))
+
     dataset = collective_criteria_scores.pivot(
         index="video", columns="criteria", values="score"
     )
     if tournesol_score_threshold:
-        dataset = dataset.loc[dataset["largely_recommended"] >= tournesol_score_threshold]
+        dataset = dataset.loc[
+            dataset["largely_recommended"] >= tournesol_score_threshold
+        ]
     dataset["publication_date"] = None
     dataset["title"] = None
     dataset["channel"] = None
@@ -49,13 +74,14 @@ def build_dataset(collective_criteria_scores, youtube_api_key, tournesol_score_t
         r = requests.get(url)
         for item in r.json()["items"]:
             dataset.loc[
-                dataset["video"] == item["id"], ["title", "channel", "publication_date", "view_count", "duration"]
+                dataset["video"] == item["id"],
+                ["title", "channel", "publication_date", "view_count", "duration"],
             ] = (
                 item["snippet"]["title"],
                 item["snippet"]["channelTitle"],
                 item["snippet"]["publishedAt"],
-                item["statistics"]["viewCount"].split('.')[0],
-                item["contentDetails"]["duration"][2:]
+                item["statistics"]["viewCount"].split(".")[0],
+                item["contentDetails"]["duration"][2:],
             )
 
     return dataset
