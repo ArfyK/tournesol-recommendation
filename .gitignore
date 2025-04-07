@@ -11,4 +11,7 @@ __pycache__/
 
 *.sh
 
+.ipynb_checkpoints
+
 youtube_api_key.txt
+
