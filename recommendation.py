@@ -34,6 +34,11 @@ def greedy(
     r"""
     Generates a subset of data by greedily maximizing a score function.
 
+    Subsets are represented by a variable `state`. Let S be a subset
+    represented by `state` and `x` a line in data then the score of
+    S \union {x} is calculated with `score(x, state, **kwargs)` and
+    the state of S \union {x} is returned by `update_state(x, state, **kwargs)`.
+
     Parameters
     ----------
     data : panda DataFrame
