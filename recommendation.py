@@ -104,11 +104,14 @@ def uniform_sampling(data, sample_size, **kwargs):
 ### Score functions and their associated update_state functions
 
 
-def get_age_in_days(video_series, ref_date):
+def age_in_days(video_series, today):
+    r"""
+
+    """
     # return 1 if the video is less than a day old
     return max(
         (
-            ref_date
+            today
             - datetime.datetime.strptime(
                 video_series["publication_date"].split("T")[0], "%Y-%m-%d"
             )
