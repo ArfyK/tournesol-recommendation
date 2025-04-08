@@ -28,7 +28,7 @@ def greedy(
     selection,
     normalization=None,
     preselection=None,
-    bundle_size=12,
+    size=12,
     **kwargs,
 ):
     r"""
@@ -53,7 +53,7 @@ def greedy(
         `normalization(data, **kwargs)` returns a normalized version of `data`.
     preselection: callable object
         `preselection(data, **kwargs)` returns a panda DataFrame containing a subset of `data`'s rows.
-    bundle_size: int
+    size: int
         Size of the generated subset.
     kwargs
         keywords arguments that are passed to `score`, `update_state`, `selection` and `pre_selection`.
@@ -71,7 +71,7 @@ def greedy(
     bundle = []
     state = None
 
-    for i in range(bundle_size):
+    for i in range(size):
         scores = data.apply(lambda x: score(x, state, **kwargs), axis="columns")
 
         new_index = selection(scores, **kwargs)
