@@ -237,6 +237,19 @@ def random_selection(scores, score_transform=None, center=True, **kwargs):
 
 
 def exponential(x, temperature, clipping_parameter):
+    r"""
+    Computes np.exp(np.clip(x / temperature, clipping_parameter, -clipping_parameter))
+
+    Parameters
+    ----------
+    x : float
+    temperature : float
+    clipping_parameter : float
+
+    Returns
+    -------
+    float
+    """
     return np.exp(np.clip(x / temperature, clipping_parameter, -clipping_parameter))
 
 
