@@ -104,16 +104,29 @@ def uniform_sampling(data, sample_size, **kwargs):
 ### Score functions and their associated update_state functions
 
 
-def age_in_days(video_series, today):
+def age_in_days(video, today):
     r"""
+    Computes the number of days between `today` and 
+    video["publication_date"].
 
+    Parameters
+    ----------
+    video : pandas Series
+        Must have "publication_date" label
+    today : date object
+
+    Returns
+    -------
+    int
+        The number of days between `today` and `video["publication_date"]`.
+        If the number of days is less than 1 the function returns 1.
+    
     """
-    # return 1 if the video is less than a day old
     return max(
         (
             today
             - datetime.datetime.strptime(
-                video_series["publication_date"].split("T")[0], "%Y-%m-%d"
+                video["publication_date"].split("T")[0], "%Y-%m-%d"
             )
         ).days,
         1,
