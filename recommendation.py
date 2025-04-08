@@ -236,7 +236,7 @@ def random_selection(scores, score_transform=None, center=True, **kwargs):
     return np.random.choice(a=scores.index, size=1, p=distribution)[0]
 
 
-def exponential(x, temperature, clipping_parameter, **kwargs):
+def exponential(x, temperature, clipping_parameter):
     return np.exp(np.clip(x / temperature, clipping_parameter, -clipping_parameter))
 
 
