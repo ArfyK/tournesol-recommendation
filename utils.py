@@ -22,9 +22,10 @@ def build_dataset(youtube_api_key, tournesol_score_threshold=None):
     -------
     pandas.DataFrame
     """
+    print("Downloading the Tournesol scores from the Tournesol API")
     response = requests.get("https://api.tournesol.app/exports/all")
     zip_file = zipfile.ZipFile(io.BytesIO(response.content))
-    collective_scores = pd.read_csv(zip_file.open("collective_criteria_scores.csv"))
+    collective_criteria_scores = pd.read_csv(zip_file.open("collective_criteria_scores.csv"))
 
     dataset = collective_criteria_scores.pivot(
         index="video", columns="criteria", values="score"
@@ -53,6 +54,7 @@ def build_dataset(youtube_api_key, tournesol_score_threshold=None):
     # Split the request in blocks of 50 ids because of the API limitations
     n_videos = dataset.shape[0]
     n_blocks = n_videos // 50
+    print("Downloading videos metadata from Youtube API")
     for i in range(n_blocks + 1):
         url = url_prefix
         if i < n_blocks:  # blocks of 50 ids
@@ -77,11 +79,12 @@ def build_dataset(youtube_api_key, tournesol_score_threshold=None):
                 dataset["video"] == item["id"],
                 ["title", "channel", "publication_date", "view_count", "duration"],
             ] = (
-                item["snippet"]["title"],
-                item["snippet"]["channelTitle"],
-                item["snippet"]["publishedAt"],
-                item["statistics"]["viewCount"].split(".")[0],
-                item["contentDetails"]["duration"][2:],
+                item["snippet"].get("title",""),
+                item["snippet"].get("channelTitle",""),
+                item["snippet"].get("publishedAt",""),
+                item["statistics"].get("viewCount","").split(".")[0],
+                item["contentDetails"].get("duration","PT")[2:],
             )
+        print("    " + str(i*50 + j + 1) + " videos out of " + str(n_videos))
 
     return dataset
