@@ -16,7 +16,7 @@ def build_dataset(youtube_api_key, tournesol_score_threshold=None):
     youtube_api_key : str
         API key to request "https://youtube.googleapis.com/youtube/v3/videos?part=snippet&part=contentDetails&part=statistics&key=<youtube_api_key>&id=<ids>"
     tournesol_score_threshold : float
-        Score threshold to filter videos having a low tournesol_score.
+        Score threshold to filter out videos having a low tournesol_score.
 
     Returns
     -------
